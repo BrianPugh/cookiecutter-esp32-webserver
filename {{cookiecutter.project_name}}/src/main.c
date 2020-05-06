@@ -5,29 +5,44 @@
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
 */
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
+
+#include "driver/gpio.h"
 #include "esp_event.h"
-#include "esp_log.h"
-#include "esp_ota_ops.h"
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
-#include "string.h"
-
+#include "esp_littlefs.h"
+#include "esp_log.h"
+#include "esp_netif.h"
+#include "esp_ota_ops.h"
+#include "esp_system.h"
+#include "esp_vfs_semihost.h"
+#include "esp_wifi.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "lwip/apps/netbiosns.h"
+#include "mdns.h"
 #include "nvs.h"
 #include "nvs_flash.h"
-#include "esp_littlefs.h"
+#include "protocol_examples_common.h"
+#include "sdkconfig.h"
+#include "sdmmc_cmd.h"
+#include "string.h"
+#include "wifi_manager.h"
+
+#if CONFIG_PROJECT_WEB_DEPLOY_SD
+#include "esp_vfs_fat.h"
+#include "driver/sdmmc_host.h"
+#endif
+
 #include "server.h"
 
-#include "esp_wifi.h"
-#include "wifi_manager.h"
 
 static const char *TAG = "{{cookiecutter.project_name}}-main";
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
 #define CONFIG_PROJECT_FS_MOUNT_POINT "/fs"
+#define MDNS_INSTANCE "mds instance"
 
 #if 0
 #define OTA_URL_SIZE 256 
@@ -100,7 +115,8 @@ void simple_ota_example_task(void *pvParameter)
 }
 #endif
 
-#if CONFIG_EXAMPLE_WEB_DEPLOY_SD
+#if CONFIG_PROJECT_WEB_DEPLOY_SD
+
 esp_err_t init_fs(void)
 {
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
@@ -133,7 +149,7 @@ esp_err_t init_fs(void)
     return ESP_OK;
 }
 
-#elif CONFIG_EXAMPLE_WEB_DEPLOY_SF
+#elif CONFIG_PROJECT_WEB_DEPLOY_SF
 
 esp_err_t init_fs(void)
 {
@@ -156,7 +172,7 @@ esp_err_t init_fs(void)
     }
 
     size_t total = 0, used = 0;
-    ret = esp_litlefs_info(NULL, &total, &used);
+    ret = esp_littlefs_info(NULL, &total, &used);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to get LittleFS partition information (%s)", esp_err_to_name(ret));
     } else {
@@ -164,7 +180,25 @@ esp_err_t init_fs(void)
     }
     return ESP_OK;
 }
+
+#else
+#error "Invalid filesystem configuration"
 #endif
+
+static void initialise_mdns(void)
+{
+    mdns_init();
+    mdns_hostname_set(CONFIG_PROJECT_MDNS_HOST_NAME);
+    mdns_instance_name_set(MDNS_INSTANCE);
+
+    mdns_txt_item_t serviceTxtData[] = {
+        {"board", "esp32"},
+        {"path", "/"}
+    };
+
+    ESP_ERROR_CHECK(mdns_service_add("ESP32-WebServer", "_http", "_tcp", 80, serviceTxtData,
+                                     sizeof(serviceTxtData) / sizeof(serviceTxtData[0])));
+}
 
 void app_main(void)
 {

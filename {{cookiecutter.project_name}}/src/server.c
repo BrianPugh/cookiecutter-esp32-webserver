@@ -14,7 +14,6 @@ static const char *TAG = "server";
     } while (0)
 
 
-#define SCRATCH_BUFSIZE (10240)
 
 server_ctx_t *server_ctx = NULL;
 static httpd_handle_t server = NULL;
@@ -38,9 +37,9 @@ esp_err_t server_init(const char *base_path) {
     ERR_CHECK(base_path, "wrong base path");
 
     /* Allocate and populate server context */
-    rest_context = calloc(1, sizeof(server_ctx_t));
-    ERR_CHECK(rest_context, "OOM while allocating server context");
-    strlcpy(rest_context->base_path, base_path, sizeof(rest_context->base_path));
+    server_ctx = calloc(1, sizeof(server_ctx_t));
+    ERR_CHECK(server_ctx, "OOM while allocating server context");
+    strlcpy(server_ctx->base_path, base_path, sizeof(server_ctx->base_path));
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
@@ -51,13 +50,14 @@ esp_err_t server_init(const char *base_path) {
     return ESP_OK;
 
 exit:
-    if( NULL!= rest_context ) {
-        free(rest_context);
+    if( NULL!= server_ctx ) {
+        free(server_ctx);
     }
     return ESP_FAIL;
 }
 
-esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*handler)(httpd_req_t *r));
+esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*handler)(httpd_req_t *r))
+{
     httpd_uri_t desc;
     desc.uri = route;
     desc.method = method;

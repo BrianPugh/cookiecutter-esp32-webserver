@@ -10,10 +10,11 @@
 #include <fcntl.h>
 #include <string.h>
 
+#define CONFIG_SERVER_SCRATCH_BUFSIZE (10240)
 
 typedef struct server_ctx {
     char base_path[ESP_VFS_PATH_MAX + 1];
-    char scratch[SCRATCH_BUFSIZE];
+    char scratch[CONFIG_SERVER_SCRATCH_BUFSIZE];
 } server_ctx_t;
 
 extern server_ctx_t *server_ctx;

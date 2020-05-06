@@ -1,3 +1,5 @@
 test-project/
+my_esp32_webapp/
+
 *.pyc
 __pycache__

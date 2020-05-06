@@ -1,10 +1,5 @@
 #include "route.h"
 
-esp_err_t reigster_routes() {
-	/* Add all routes HERE */
-    server_register("/api/v1/system/info", system_info_get_handler)
-}
-
 /**************************
  * Private Route Handlers *
  **************************/
@@ -24,3 +19,25 @@ static esp_err_t system_info_get_handler(httpd_req_t *req)
     cJSON_Delete(root);
     return ESP_OK;
 }
+
+/********************
+ * Public Functions *
+ ********************/
+
+#define ERR_CHECK(x)                   \
+    do {                               \
+        err = x;                       \
+        if( ESP_OK != err ) goto exit; \
+    } while(0)
+
+esp_err_t reigster_routes() {
+	/* Add all routes HERE */
+    esp_err_t err = ESP_OK;
+
+    ERR_CHECK(server_register("/api/v1/system/info", HTTP_GET, system_info_get_handler));
+
+exit:
+    return err;
+}
+
+

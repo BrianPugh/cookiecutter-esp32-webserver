@@ -1,8 +1,8 @@
 .PHONY: test
 
 test:
-	cookiecutter . --output-dir test-project --default-config --no-input --overwrite-if-exists
-	cd test-project
-	idf.py build
-	cd ..
+	rm -rf my_esp32_webapp
+	# Cannot overwrite-if-exist due to how cookiecutter handles `_copy_without_render`
+	cookiecutter . --default-config --no-input #--overwrite-if-exists
+	cd my_esp32_webapp && idf.py build
 
