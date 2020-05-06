@@ -1,0 +1,5 @@
+{
+    "full_name": "Brian Pugh",
+    "project_name": "my_esp32_webapp",
+    "git_repo": "https://github.com/USER/{{cookiecutter.component_var_name}}.git"  
+}

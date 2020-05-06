@@ -1,0 +1,6 @@
+[submodule "components/esp32-wifi-manager"]
+	path = components/esp32-wifi-manager
+	url = https://github.com/tonyp7/esp32-wifi-manager.git
+[submodule "components/esp_littlefs"]
+	path = components/esp_littlefs
+	url = https://github.com/joltwallet/esp_littlefs.git
