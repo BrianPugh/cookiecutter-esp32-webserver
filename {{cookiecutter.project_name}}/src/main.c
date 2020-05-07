@@ -23,7 +23,6 @@
 #include "mdns.h"
 #include "nvs.h"
 #include "nvs_flash.h"
-#include "protocol_examples_common.h"
 #include "sdkconfig.h"
 #include "sdmmc_cmd.h"
 #include "string.h"
@@ -37,7 +36,7 @@
 #include "server.h"
 
 
-static const char *TAG = "{{cookiecutter.project_name}}-main";
+static const char *TAG = "{{cookiecutter.project_var_name}}-main";
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
@@ -155,8 +154,8 @@ esp_err_t init_fs(void)
 {
     esp_vfs_littlefs_conf_t conf = {
         .base_path = CONFIG_PROJECT_FS_MOUNT_POINT,
-        .partition_label = NULL,
-        .format_if_mount_failed = false
+        .partition_label = "filesystem",
+        .format_if_mount_failed = true  // Change this to false if you intend to flash specific contents to the internal filesystem
     };
     esp_err_t ret = esp_vfs_littlefs_register(&conf);
 
@@ -227,7 +226,7 @@ void app_main(void)
     // TODO
 
     /* start the wifi manager */
-    wifi_manager_start();
+    //wifi_manager_start();  // caues httpd bind issues
 
     /* TODO */
     //wifi_manager_set_callback(EVENT_STA_GOT_IP, &cb_connection_ok);

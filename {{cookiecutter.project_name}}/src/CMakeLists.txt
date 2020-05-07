@@ -1,0 +1,19 @@
+
+idf_component_register(
+		SRCS
+			"main.c"
+			"server.c"
+            "route.c"
+            "filesystem.c"
+            "ota/ota.c"
+		INCLUDE_DIRS
+			"."
+        REQUIRES
+            "app_update"
+            "esp32-wifi-manager"
+            "esp_littlefs"
+            "esp_http_client"
+            "esp_https_ota"
+            "fatfs"
+            "json"
+)
