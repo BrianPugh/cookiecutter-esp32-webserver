@@ -95,6 +95,7 @@ esp_err_t parse_post_request(cJSON *json, httpd_req_t *req)
     buf[total_len] = '\0';
     json = cJSON_Parse(buf);
     if( NULL == json) {
+        ESP_LOGE(TAG, "Invalid json data: %s", buf);
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to parse JSON data");
         return ESP_FAIL;
     }

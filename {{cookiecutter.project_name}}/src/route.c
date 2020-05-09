@@ -30,7 +30,7 @@ static esp_err_t system_info_get_handler(httpd_req_t *req)
 /* Turns on an LED for X milliseconds 
  *
  * invoke via:
- *     curl -X POST <ESP32_IP>/api/v1/led_timer '{"duration": 1000}'
+ *     curl -X POST <ESP32_IP>/api/v1/led/timer '{"duration": 1000}'
  *
  */
 static esp_err_t led_timer_post_handler(httpd_req_t *req)
@@ -81,7 +81,7 @@ esp_err_t register_routes() {
     esp_err_t err = ESP_OK;
 
     ERR_CHECK(server_register("/api/v1/system/info", HTTP_GET, system_info_get_handler));
-    ERR_CHECK(server_register("/api/v1/system/info", HTTP_GET, system_info_get_handler));
+    ERR_CHECK(server_register("/api/v1/led/timer", HTTP_POST, led_timer_post_handler));
 
 exit:
     return err;
