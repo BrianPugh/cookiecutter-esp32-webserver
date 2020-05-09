@@ -1,4 +1,4 @@
-.PHONY: render build flash ota
+.PHONY: render env-test build flash ota endpt-led
 
 # All targets in this Makefile are intended for testing if the default
 # cookiecutter template compiles and functions properly.
@@ -13,6 +13,11 @@ render:
 	ln -s ${PWD}/build ${PWD}/my_esp32_webapp/build
 	ln -s ${PWD}/sdkconfig ${PWD}/my_esp32_webapp/sdkconfig
 
+env-test:
+ifndef ESP32_IP
+	$(error ESP32_IP is undefined)
+endif
+
 build: render
 	# Builds the default binary
 	cd my_esp32_webapp && idf.py build
@@ -20,5 +25,12 @@ build: render
 flash: build
 	cd my_esp32_webapp && idf.py flash monitor
 
-ota: build
+ota: build env-test
 	cd my_esp32_webapp && make ota
+
+endpt-led: env-test
+	# Flashes the LED for a second
+	curl -X POST ${ESP32_IP}/api/v1/led/timer --data '{"duration": 1000}'
+
+endpt-system: env-test
+	curl ${ESP32_IP}/api/v1/system/info
