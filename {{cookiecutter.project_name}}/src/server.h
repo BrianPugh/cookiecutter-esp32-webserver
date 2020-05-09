@@ -52,6 +52,6 @@ esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*
  * @returns cJSON object. Must be eventually be deleted via `cJSON_Delete`
  *          by the caller. Returns NULL on error.
  */
-esp_err_t parse_post_request(cJSON *json, httpd_req_t *req);
+esp_err_t parse_post_request(cJSON **json, httpd_req_t *req);
 
 #endif

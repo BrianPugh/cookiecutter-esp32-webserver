@@ -22,8 +22,6 @@ static httpd_handle_t server = NULL;
 /**
  * @brief Start Web server
  *
- * All Routes must be registered first
- *
  * @param[in] base_path Path to the root of the filesystem
  */
 esp_err_t server_init(const char *base_path) {
@@ -71,12 +69,13 @@ esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*
 }
 
 
-esp_err_t parse_post_request(cJSON *json, httpd_req_t *req)
+esp_err_t parse_post_request(cJSON **json, httpd_req_t *req)
 {
     int total_len = req->content_len;
     int cur_len = 0;
     char *buf = ((server_ctx_t *)(req->user_ctx))->scratch;
     int received = 0;
+    ESP_LOGI(TAG, "Parsing POST request of length %d", total_len);
 
     if (total_len >= CONFIG_SERVER_SCRATCH_BUFSIZE) {
         /* Respond with 500 Internal Server Error */
@@ -93,8 +92,8 @@ esp_err_t parse_post_request(cJSON *json, httpd_req_t *req)
         cur_len += received;
     }
     buf[total_len] = '\0';
-    json = cJSON_Parse(buf);
-    if( NULL == json) {
+    *json = cJSON_Parse(buf);
+    if( NULL == *json) {
         ESP_LOGE(TAG, "Invalid json data: %s", buf);
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to parse JSON data");
         return ESP_FAIL;
