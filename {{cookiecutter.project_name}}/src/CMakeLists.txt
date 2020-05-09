@@ -12,10 +12,14 @@ idf_component_register(
 			"."
         REQUIRES
             "app_update"
-            "esp32-wifi-manager"
-            "esp_littlefs"
             "esp_http_client"
+            "esp_http_server"
             "esp_https_ota"
+            "esp_littlefs"
+            "esp_system"
+            "esp_wifi"
             "fatfs"
             "json"
+            "mdns"
+            "nvs_flash"
 )
