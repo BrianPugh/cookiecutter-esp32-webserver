@@ -20,11 +20,15 @@ cookiecutter -c v0.0.0 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
 
 ## Routes
 
-Add routes to `src/route.c`. This involves 2 parts:
+Add new routes to `src/route/v1/*`. As you make backwards incompatible updates
+to certain endpoints, you can create a new folder `v2` while maintaining older
+routes.
 
-1. Writing the handler function (see examples in the file)
+Adding routes involves 2 parts:
+
+1. Writing the handler function (see `src/route/v1/examples.c`)
 2. Registering the handler with a route and command type in the `register_routes`
-   function.
+   function of `src/route.c`.
 
 Thats it!
 
