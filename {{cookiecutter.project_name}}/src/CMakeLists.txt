@@ -7,6 +7,7 @@ idf_component_register(
             "led.c"
             "route.c"
             "route/v1/example.c"
+            "route/v1/filesystem.c"
             "route/v1/ota.c"
             "route/v1/system.c"
 		INCLUDE_DIRS

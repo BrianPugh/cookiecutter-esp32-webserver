@@ -2,6 +2,7 @@
 
 /* Include route handlers */
 #include "route/v1/example.h"
+#include "route/v1/filesystem.h"
 #include "route/v1/ota.h"
 #include "route/v1/system.h"
 
@@ -19,9 +20,12 @@ esp_err_t register_routes() {
 	/* Add all routes HERE */
     esp_err_t err = ESP_OK;
 
-    ERR_CHECK(server_register("/api/v1/system/info", HTTP_GET, system_info_get_handler));
+    ERR_CHECK(server_register("/api/v1/filesystem/*", HTTP_DELETE, filesystem_file_delete_handler));
+    ERR_CHECK(server_register("/api/v1/filesystem/*", HTTP_GET, filesystem_file_get_handler));
+    ERR_CHECK(server_register("/api/v1/filesystem/*", HTTP_POST, filesystem_file_post_handler));
     ERR_CHECK(server_register("/api/v1/led/timer", HTTP_POST, led_timer_post_handler));
     ERR_CHECK(server_register("/api/v1/ota", HTTP_POST, ota_post_handler));
+    ERR_CHECK(server_register("/api/v1/system/info", HTTP_GET, system_info_get_handler));
 
 exit:
     return err;

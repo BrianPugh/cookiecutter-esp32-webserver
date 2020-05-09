@@ -28,7 +28,7 @@ esp_err_t system_info_get_handler(httpd_req_t *req)
         cJSON_AddNumberToObject(root, "silicon-revision", chip_info.revision);
     }
     {
-        esp_app_desc_t *desc = esp_ota_get_app_description();
+        const esp_app_desc_t *desc = esp_ota_get_app_description();
         cJSON_AddStringToObject(root, "project-name", desc->project_name);
         cJSON_AddStringToObject(root, "project-version", desc->version);
         cJSON_AddStringToObject(root, "compile-date", desc->date);
