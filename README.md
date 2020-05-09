@@ -2,23 +2,34 @@ This is a cookiecutter template for anyone who wants to create an ESP32 applicat
 who's primary purpose is to be a web server and to be interacted with via a REST
 API.
 
+Small additional functions/features are added to demo common functionality
+so you can spend less time reading documentation and more time getting
+your project working!
+
+
 # Usage
+To render this template into a working project directory, you need to use the
+command-line utility `cookiecutter`. This can be installed via `pip3 install cookiecutter`.
 
 ```
 cookiecutter -c v0.0.0 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
 ```
 
-
-# OTA
-This sets up the boiler plate to allow OTA over WiFi via 2 different methods:
-
-1. Querying a URL for TODO upon startup 
-2. Uploading over the endpoint `/api/v1/ota`
+# Features
 
 ## WebServer
 Many times you just want a web server to serve a REST API to control hardware.
 This sets up code and gives you nearby simple examples to base your API of of.
 
+## Git Repo
+A small nicety is that this automaticall intializes your git repo upon
+creation.
+
+## OTA
+This sets up the boiler plate to allow OTA over WiFi via 2 different methods:
+
+1. Querying a URL for TODO upon startup 
+2. Uploading over the endpoint `/api/v1/ota`
 
 # Misc tips
 
