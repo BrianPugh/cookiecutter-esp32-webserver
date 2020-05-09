@@ -34,6 +34,7 @@
 #include "driver/sdmmc_host.h"
 #endif
 
+#include "led.h"
 #include "server.h"
 
 
@@ -323,6 +324,9 @@ void app_main(void)
 
     /* Set default NVS values */
     // TODO
+    
+    /* Setup GPIO */
+    led_setup();
 
     /* Setup DNS */
     initialise_mdns();

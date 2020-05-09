@@ -1,3 +1,4 @@
+#include "led.h"
 #include "route.h"
 
 /**************************
@@ -7,6 +8,9 @@
 /* Simple handler for getting system handler */
 static esp_err_t system_info_get_handler(httpd_req_t *req)
 {
+    /* Toggle the LED to show some physical interaction */
+    led_toggle();
+
     httpd_resp_set_type(req, "application/json");
     cJSON *root = cJSON_CreateObject();
     esp_chip_info_t chip_info;

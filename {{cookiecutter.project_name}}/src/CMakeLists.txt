@@ -3,9 +3,10 @@ idf_component_register(
 		SRCS
 			"main.c"
 			"server.c"
-            "route.c"
             "filesystem.c"
+            "led.c"
             "ota/ota.c"
+            "route.c"
 		INCLUDE_DIRS
 			"."
         REQUIRES
