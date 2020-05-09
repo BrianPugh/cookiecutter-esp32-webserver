@@ -1,5 +1,17 @@
 menu "{{cookiecutter.project_name}} Configuration"
 
+    config PROJECT_WIFI_SSID
+        string "WiFi SSID"
+        default "my wifi ssid"
+        help
+            SSID (name) of the wifi network to connect to.
+
+    config PROJECT_WIFI_PASS
+        string "WiFi Password"
+        default "my wifi password"
+        help
+            Password for the wifi network to connect to.
+
     config PROJECT_MDNS_HOST_NAME
         string "mDNS Host Name"
         default "esp-webserver"

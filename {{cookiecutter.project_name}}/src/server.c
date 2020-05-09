@@ -1,4 +1,5 @@
 #include "server.h"
+#include "route.h"
 
 static const char *TAG = "server";
 
@@ -14,9 +15,9 @@ static const char *TAG = "server";
     } while (0)
 
 
-
 server_ctx_t *server_ctx = NULL;
 static httpd_handle_t server = NULL;
+
 
 /**
  * @brief Start Web server
@@ -46,6 +47,8 @@ esp_err_t server_init(const char *base_path) {
 
     ESP_LOGI(TAG, "Starting HTTP Server");
     ERR_CHECK(httpd_start(&server, &config) == ESP_OK, "Start server failed");
+
+    ERR_CHECK(register_routes() == ESP_OK, "Failed to register routes");
 
     return ESP_OK;
 

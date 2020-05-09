@@ -30,7 +30,7 @@ static esp_err_t system_info_get_handler(httpd_req_t *req)
         if( ESP_OK != err ) goto exit; \
     } while(0)
 
-esp_err_t reigster_routes() {
+esp_err_t register_routes() {
 	/* Add all routes HERE */
     esp_err_t err = ESP_OK;
 
