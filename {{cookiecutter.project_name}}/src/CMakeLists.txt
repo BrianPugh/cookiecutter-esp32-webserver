@@ -23,4 +23,5 @@ idf_component_register(
             "json"
             "mdns"
             "nvs_flash"
+            "libsodium"
 )
