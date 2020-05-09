@@ -8,6 +8,7 @@ idf_component_register(
             "route.c"
             "route/v1/example.c"
             "route/v1/ota.c"
+            "route/v1/system.c"
 		INCLUDE_DIRS
 			"."
         REQUIRES

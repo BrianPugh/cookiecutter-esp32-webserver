@@ -1,8 +1,9 @@
 #include "route.h"
 
 /* Include route handlers */
-#include "route/v1/ota.h"
 #include "route/v1/example.h"
+#include "route/v1/ota.h"
+#include "route/v1/system.h"
 
 __unused static const char TAG[] = "route";
 

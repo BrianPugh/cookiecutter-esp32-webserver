@@ -5,12 +5,6 @@
 
 
 /**
- * @brief Simple handler for getting system handler 
- */
-esp_err_t system_info_get_handler(httpd_req_t *req);
-
-
-/**
  * @brief Turns on an LED for "duration" milliseconds
  *
  * invoke via (replace ${ESP32_IP} with your device's IP address):
