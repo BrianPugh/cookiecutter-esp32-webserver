@@ -40,18 +40,4 @@ esp_err_t server_init(const char *base_path);
 esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*handler)(httpd_req_t *r));
 
 
-/**
- * @brief Parse a POST request into a cJSON object.
- *
- * Uses context scratch pad. The scratch pad must not be cleared/re-used
- * during the lifetime of the json object.
- *
- * @param[out] json Parsed json object. Must be eventually be deleted via `cJSON_Delete`
- *          by the caller.
- * @param[in] req Some POST request
- * @returns cJSON object. Must be eventually be deleted via `cJSON_Delete`
- *          by the caller. Returns NULL on error.
- */
-esp_err_t parse_post_request(cJSON **json, httpd_req_t *req);
-
 #endif
