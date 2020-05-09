@@ -6,6 +6,9 @@ Small additional functions/features are added to demo common functionality
 so you can spend less time reading documentation and more time getting
 your project working!
 
+This project is not meant to serve many users concurrently, its primarily
+meant to just be a simple, approachable way to add REST functionality
+to simple DIY projects.
 
 # Usage
 To render this template into a working project directory, you need to use the
@@ -14,6 +17,16 @@ command-line utility `cookiecutter`. This can be installed via `pip3 install coo
 ```
 cookiecutter -c v0.0.0 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
 ```
+
+## Routes
+
+Add routes to `src/route.c`. This involves 2 parts:
+
+1. Writing the handler function (see examples in the file)
+2. Registering the handler with a route and command type in the `register_routes`
+   function.
+
+Thats it!
 
 # Features
 

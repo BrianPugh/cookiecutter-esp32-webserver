@@ -1,5 +1,8 @@
 test-project/
 my_esp32_webapp/
 
+build/
+sdkconfig
+
 *.pyc
 __pycache__

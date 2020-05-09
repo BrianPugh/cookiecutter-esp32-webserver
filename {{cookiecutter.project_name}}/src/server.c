@@ -69,3 +69,36 @@ esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*
 
     return httpd_register_uri_handler(server, &desc);
 }
+
+
+esp_err_t parse_post_request(cJSON *json, httpd_req_t *req)
+{
+    int total_len = req->content_len;
+    int cur_len = 0;
+    char *buf = ((server_ctx_t *)(req->user_ctx))->scratch;
+    int received = 0;
+
+    if (total_len >= CONFIG_SERVER_SCRATCH_BUFSIZE) {
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
+        return ESP_FAIL;
+    }
+    while (cur_len < total_len) {
+        received = httpd_req_recv(req, buf + cur_len, total_len);
+        if (received <= 0) {
+            /* Respond with 500 Internal Server Error */
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
+            return ESP_FAIL;
+        }
+        cur_len += received;
+    }
+    buf[total_len] = '\0';
+    json = cJSON_Parse(buf);
+    if( NULL == json) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to parse JSON data");
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
+
