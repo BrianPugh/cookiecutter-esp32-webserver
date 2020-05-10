@@ -555,13 +555,6 @@ esp_err_t filesystem_file_delete_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
-    /* Filename cannot have a trailing '/' */
-    //if (filepath[strlen(filepath) - 1] == '/') {
-    //    ESP_LOGE(TAG, "Invalid filename: %s", filepath);
-    //    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
-    //    goto exit;
-    //}
-
     if (stat(filepath, &file_stat) == -1) {
         ESP_LOGE(TAG, "Does not exist: %s", filepath);
         /* Respond with 400 Bad Request */
@@ -570,6 +563,7 @@ esp_err_t filesystem_file_delete_handler(httpd_req_t *req)
     }
 
     ESP_LOGI(TAG, "Deleting: %s", filepath);
+
     /* Delete file */
     rm_rf(filepath);
 
