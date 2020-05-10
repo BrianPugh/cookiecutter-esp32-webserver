@@ -33,7 +33,7 @@ function setpath() {
 }
 function upload() {
     var filePath = document.getElementById("filepath").value;
-    var upload_path = "/upload/" + filePath;
+    var upload_path = "/api/v1/filesystem/" + filePath;
     var fileInput = document.getElementById("newfile").files;
 
     /* Max size of an individual file. Make sure this

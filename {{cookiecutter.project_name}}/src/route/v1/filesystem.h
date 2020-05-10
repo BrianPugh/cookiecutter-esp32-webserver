@@ -8,7 +8,7 @@
 #include "route.h"
 
 
-#define PROJECT_FILESYSTEM_ROUTE_ROOT "/api/v1/filesystem/"
+#define PROJECT_FILESYSTEM_ROUTE_ROOT "/api/v1/filesystem"
 
 /**
  * @brief Upload/overwrite file

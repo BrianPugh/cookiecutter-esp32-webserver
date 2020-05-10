@@ -41,9 +41,19 @@ static const char *get_path_from_uri(const httpd_req_t *req) {
             pathlen = MIN(pathlen, hash - uri);
         }
     }
-    // Move URI pointer to start at the filepath portion
-    uri += strlen(PROJECT_FILESYSTEM_ROUTE_ROOT);
-    pathlen -= strlen(PROJECT_FILESYSTEM_ROUTE_ROOT);
+
+    if (pathlen <= strlen(PROJECT_FILESYSTEM_ROUTE_ROOT)) {
+		// Just return the root of the mounted filesystem
+        // For whenever the endpt "/api/v1/filesystem" is queried without
+        // a trailing "/"
+        pathlen = 0;
+	}
+    else {
+        // Move URI pointer to start at the filepath portion
+        // The plus one is for the trailing '/'
+        uri += (strlen(PROJECT_FILESYSTEM_ROUTE_ROOT) + 1);
+        pathlen -= (strlen(PROJECT_FILESYSTEM_ROUTE_ROOT) + 1);
+    }
 
     // +1 for null-terminator
     size_t parsed_len = strlen(base_path) + pathlen + 1;
@@ -274,7 +284,7 @@ esp_err_t filesystem_file_post_handler(httpd_req_t *req)
 
     /* Redirect onto root to see the updated file list */
     httpd_resp_set_status(req, "303 See Other");
-    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_set_hdr(req, "Location", "/api/v1/filesystem/");
     httpd_resp_sendstr(req, "File uploaded successfully");
 
     err = ESP_OK;

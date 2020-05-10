@@ -28,6 +28,9 @@ flash: build
 ota: build env-test
 	cd my_esp32_webapp && make ota
 
+monitor:
+	cd my_esp32_webapp && idf.py monitor
+
 endpt-led: env-test
 	# Flashes the LED for a second
 	curl -X POST ${ESP32_IP}/api/v1/led/timer --data '{"duration": 1000}'
