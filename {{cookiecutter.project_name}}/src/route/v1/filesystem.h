@@ -8,7 +8,7 @@
 #include "route.h"
 
 
-#define PROJECT_FILESYSTEM_ROUTE_ROOT "/api/v1/filesystem"
+#define PROJECT_ROUTE_V1_FILESYSTEM "/api/v1/filesystem"
 
 /**
  * @brief Upload/overwrite/deletes file. If content len is 0, deletes file.
@@ -36,7 +36,7 @@ esp_err_t filesystem_file_get_handler(httpd_req_t *req);
 /**
  * @brief Delete a file
  *
- *     curl ${ESP32_IP}/api/v1/filesystem/${PATH}
+ *     curl -X DELETE ${ESP32_IP}/api/v1/filesystem/${PATH}
  * where:
  *     PATH - Path on device
  */

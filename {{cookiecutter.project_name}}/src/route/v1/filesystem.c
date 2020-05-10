@@ -199,7 +199,7 @@ static char *get_path_from_uri(const httpd_req_t *req) {
         }
     }
 
-    if (pathlen <= strlen(PROJECT_FILESYSTEM_ROUTE_ROOT)) {
+    if (pathlen <= strlen(PROJECT_ROUTE_V1_FILESYSTEM)) {
 		// Just return the root of the mounted filesystem
         // For whenever the endpt "/api/v1/filesystem" is queried without
         // a trailing "/"
@@ -208,8 +208,8 @@ static char *get_path_from_uri(const httpd_req_t *req) {
     else {
         // Move URI pointer to start at the filepath portion
         // The plus one is for the trailing '/'
-        uri += (strlen(PROJECT_FILESYSTEM_ROUTE_ROOT) + 1);
-        pathlen -= (strlen(PROJECT_FILESYSTEM_ROUTE_ROOT) + 1);
+        uri += (strlen(PROJECT_ROUTE_V1_FILESYSTEM) + 1);
+        pathlen -= (strlen(PROJECT_ROUTE_V1_FILESYSTEM) + 1);
     }
 
     // +1 for null-terminator
@@ -269,8 +269,8 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
 
     /* Get handle to embedded file upload script */
     /* See EMBED_FILES in CMakeLists.txt */
-    extern const unsigned char upload_script_start[] asm("_binary_api_v1_filesystem_upload_html_start");
-    extern const unsigned char upload_script_end[]   asm("_binary_api_v1_filesystem_upload_html_end");
+    extern const unsigned char upload_script_start[] asm("_binary_api_v1_filesystem_html_start");
+    extern const unsigned char upload_script_end[]   asm("_binary_api_v1_filesystem_html_end");
 
     const size_t upload_script_size = (upload_script_end - upload_script_start);
 
@@ -612,7 +612,7 @@ esp_err_t filesystem_file_delete_handler(httpd_req_t *req)
 
     /* Redirect onto root to see the updated file list */
     httpd_resp_set_status(req, "303 See Other");
-    httpd_resp_set_hdr(req, "Location", PROJECT_FILESYSTEM_ROUTE_ROOT);
+    httpd_resp_set_hdr(req, "Location", PROJECT_ROUTE_V1_FILESYSTEM);
     httpd_resp_sendstr(req, "File deleted successfully");
 	err = ESP_OK;
 

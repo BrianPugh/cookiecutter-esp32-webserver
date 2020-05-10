@@ -41,6 +41,7 @@ esp_err_t server_init(const char *base_path) {
     strlcpy(server_ctx->base_path, base_path, sizeof(server_ctx->base_path));
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = 32;  // Adjust this depending on how many routes you have
     config.uri_match_fn = httpd_uri_match_wildcard;
 
     ESP_LOGI(TAG, "Starting HTTP Server");

@@ -8,6 +8,7 @@ idf_component_register(
             "route.c"
             "route/v1/example.c"
             "route/v1/filesystem.c"
+            "route/v1/nvs.c"
             "route/v1/ota.c"
             "route/v1/system.c"
         INCLUDE_DIRS
@@ -35,5 +36,5 @@ idf_component_register(
             # e.g:
             #        extern const uint8_t server_root_cert_pem_start[] asm("_binary_server_root_cert_pem_start");
             #        extern const uint8_t server_root_cert_pem_end[]   asm("_binary_server_root_cert_pem_end");
-            "html/api_v1_filesystem_upload.html"
+            "html/api_v1_filesystem.html"
 )
