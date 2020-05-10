@@ -1,5 +1,6 @@
 #include "errno.h"
 #include "route/v1/filesystem.h"
+#include "../../filesystem.h"
 #include <sys/param.h>
 
 /**
@@ -40,6 +41,27 @@ static int mkdir_if_not_exist(const char *path) {
         }
     }
     return 0;
+}
+
+
+/**
+ * @brief modifies path in place to remove repeated '/'
+ */
+static char *trim_separators(char *path) {
+    uint32_t count = 0;
+    char *w, *r;
+    for(w = path, r = path; *r != '\0'; r++) {
+        if( *r == '/' ) count++;
+        else count = 0;
+
+        if(count > 1) {
+            continue;
+        }
+
+        *w++ = *r;
+    }
+    *w = '\0';
+    return path;
 }
 
 /**
@@ -160,7 +182,7 @@ exit:
 static char *get_path_from_uri(const httpd_req_t *req) {
     // Where the filesystem is mounted; e.g. "/fs"
 	const char *base_path = ((server_ctx_t *)req->user_ctx)->base_path;
-    const char *uri = req->uri;
+    const char *uri = trim_separators(req->uri);
     char *parsed = NULL;
 
     size_t pathlen = strlen(uri);
@@ -219,6 +241,7 @@ exit:
  */
 static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
 {
+    esp_err_t err = ESP_FAIL;
     char entrypath[MAX_FILE_PATH];
     char entrysize[16];
     const char *entrytype;
@@ -226,7 +249,9 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
     struct dirent *entry;
     struct stat entry_stat;
 
-    DIR *dir = opendir(dirpath);
+    DIR *dir = NULL;
+
+    dir = opendir(dirpath);
     const size_t dirpath_len = strlen(dirpath);
 
     /* Retrieve the base path of file storage to construct the full path */
@@ -236,7 +261,7 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         ESP_LOGE(TAG, "Failed to stat dir : %s", dirpath);
         /* Respond with 404 Not Found */
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Directory does not exist");
-        return ESP_FAIL;
+        goto exit;
     }
 
     /* Send HTML file header */
@@ -258,6 +283,21 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         "<col width=\"800px\" /><col width=\"300px\" /><col width=\"300px\" /><col width=\"100px\" />"
         "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
         "<tbody>");
+
+    /* Add ".." option at top if we are not at the root of the mount point*/
+    if(strcmp(dirpath, CONFIG_PROJECT_FS_MOUNT_POINT "/")){
+        char *p;
+        char *parent = NULL;
+        parent = strdup(req->uri);
+        if(NULL == parent) goto exit;
+        parent = trim_separators(parent);
+        for(p = parent + strlen(parent) - 2; *p != '/'; p--) ;
+        p[1] = '\0';
+        httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
+        httpd_resp_sendstr_chunk(req, parent);  // link
+        httpd_resp_sendstr_chunk(req, "\">..</a></td><td>");
+        free(parent);
+    }
 
     /* Iterate over all files / folders and fetch their names and sizes */
     while ((entry = readdir(dir)) != NULL) {
@@ -293,7 +333,6 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
         httpd_resp_sendstr_chunk(req, "</td></tr>\n");
     }
-    closedir(dir);
 
     /* Finish the file list table */
     httpd_resp_sendstr_chunk(req, "</tbody></table>");
@@ -303,7 +342,11 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
 
     /* Send empty chunk to signal HTTP response completion */
     httpd_resp_sendstr_chunk(req, NULL);
-    return ESP_OK;
+    err = ESP_OK;
+
+exit:
+    if(dir) closedir(dir);
+    return err;
 }
 
 /* Set HTTP response content type according to file extension */
