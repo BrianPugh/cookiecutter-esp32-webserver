@@ -22,7 +22,7 @@ __unused static const char TAG[] = "route/v1/filesystem";
  *
  * Caller must free returned string
  */
-static const char *get_path_from_uri(const httpd_req_t *req) {
+static char *get_path_from_uri(const httpd_req_t *req) {
     // Where the filesystem is mounted; e.g. "/fs"
 	const char *base_path = ((server_ctx_t *)req->user_ctx)->base_path;
     const char *uri = req->uri;
@@ -56,7 +56,9 @@ static const char *get_path_from_uri(const httpd_req_t *req) {
     }
 
     // +1 for null-terminator
-    size_t parsed_len = strlen(base_path) + pathlen + 1;
+    // +1 for initial slash separator
+    size_t parsed_len = strlen(base_path) + pathlen + 2;
+    ESP_LOGI(TAG, "Allocating %d bytes for path", parsed_len);
     parsed = malloc(parsed_len);
     if( NULL == parsed ) goto exit;
     {
@@ -148,8 +150,9 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         httpd_resp_sendstr_chunk(req, "</td><td>");
         httpd_resp_sendstr_chunk(req, entrysize);
         httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/delete");
+        httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"");
         httpd_resp_sendstr_chunk(req, req->uri);
+        httpd_resp_sendstr_chunk(req, "/");
         httpd_resp_sendstr_chunk(req, entry->d_name);
         httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
         httpd_resp_sendstr_chunk(req, "</td></tr>\n");
@@ -188,7 +191,6 @@ esp_err_t filesystem_file_post_handler(httpd_req_t *req)
 {
     esp_err_t err = ESP_FAIL;
     FILE *fd = NULL;
-    struct stat file_stat;
     char *buf = ((server_ctx_t *)req->user_ctx)->scratch;
 
     char *filepath = get_path_from_uri(req);
@@ -202,6 +204,7 @@ esp_err_t filesystem_file_post_handler(httpd_req_t *req)
     // Enable the following if you don't want POST requests to be able to
     // overwrite existing files.
 #if 0
+    struct stat file_stat;
     if (stat(filepath, &file_stat) == 0) {
         ESP_LOGE(TAG, "File already exists : %s", filepath);
         /* Respond with 400 Bad Request */
@@ -209,6 +212,7 @@ esp_err_t filesystem_file_post_handler(httpd_req_t *req)
         goto exit;
     }
 #endif
+    ESP_LOGI(TAG, "Content_len: %d", req->content_len);
 
     /* File cannot be larger than a limit */
     if (req->content_len > MAX_FILE_SIZE) {
@@ -219,6 +223,12 @@ esp_err_t filesystem_file_post_handler(httpd_req_t *req)
                             MAX_FILE_SIZE_STR "!");
         /* Return failure to close underlying connection else the
          * incoming file content will keep the socket busy */
+        goto exit;
+    }
+
+    if(req->content_len == 0) {
+        /* Delete the file */
+        err = filesystem_file_delete_handler(req);
         goto exit;
     }
 
@@ -389,7 +399,46 @@ exit:
 
 esp_err_t filesystem_file_delete_handler(httpd_req_t *req)
 {
-    //TODO
-    return ESP_OK;
+    esp_err_t err = ESP_FAIL;
+    struct stat file_stat;
+
+    char *filepath = get_path_from_uri(req);
+
+    if (!filepath) {
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
+        return ESP_FAIL;
+    }
+
+    /* Filename cannot have a trailing '/' */
+    if (filepath[strlen(filepath) - 1] == '/') {
+        ESP_LOGE(TAG, "Invalid filename: %s", filepath);
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
+        goto exit;
+    }
+
+    if (stat(filepath, &file_stat) == -1) {
+        ESP_LOGE(TAG, "File does not exist: %s", filepath);
+        /* Respond with 400 Bad Request */
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
+        goto exit;
+    }
+
+    ESP_LOGI(TAG, "Deleting file: %s", filepath);
+    /* Delete file */
+    unlink(filepath);
+
+    /* Redirect onto root to see the updated file list */
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", PROJECT_FILESYSTEM_ROUTE_ROOT);
+    httpd_resp_sendstr(req, "File deleted successfully");
+	err = ESP_OK;
+
+exit:
+    if(filepath) {
+        free(filepath);
+    }
+    return err;
+
 }
 

@@ -11,7 +11,7 @@
 #define PROJECT_FILESYSTEM_ROUTE_ROOT "/api/v1/filesystem"
 
 /**
- * @brief Upload/overwrite file
+ * @brief Upload/overwrite/deletes file. If content len is 0, deletes file.
  *
  *      curl -X POST ${ESP32_IP}/api/v1/filesystem/${PATH} --data-binary @- < ${LOCAL_FILE}
  *
