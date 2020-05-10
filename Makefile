@@ -34,3 +34,6 @@ endpt-led: env-test
 
 endpt-system: env-test
 	curl ${ESP32_IP}/api/v1/system/info
+
+endpt-upload: env-test
+	curl ${ESP32_IP}/api/v1/filesystem/README.md --data-binary @- < README.md

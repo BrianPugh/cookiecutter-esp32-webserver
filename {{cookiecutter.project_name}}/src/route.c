@@ -20,9 +20,9 @@ esp_err_t register_routes() {
 	/* Add all routes HERE */
     esp_err_t err = ESP_OK;
 
-    ERR_CHECK(server_register("/api/v1/filesystem/*", HTTP_DELETE, filesystem_file_delete_handler));
-    ERR_CHECK(server_register("/api/v1/filesystem/*", HTTP_GET, filesystem_file_get_handler));
-    ERR_CHECK(server_register("/api/v1/filesystem/*", HTTP_POST, filesystem_file_post_handler));
+    ERR_CHECK(server_register(PROJECT_FILESYSTEM_ROUTE_ROOT "*", HTTP_DELETE, filesystem_file_delete_handler));
+    ERR_CHECK(server_register(PROJECT_FILESYSTEM_ROUTE_ROOT "*", HTTP_GET, filesystem_file_get_handler));
+    ERR_CHECK(server_register(PROJECT_FILESYSTEM_ROUTE_ROOT "*", HTTP_POST, filesystem_file_post_handler));
     ERR_CHECK(server_register("/api/v1/led/timer", HTTP_POST, led_timer_post_handler));
     ERR_CHECK(server_register("/api/v1/ota", HTTP_POST, ota_post_handler));
     ERR_CHECK(server_register("/api/v1/system/info", HTTP_GET, system_info_get_handler));
