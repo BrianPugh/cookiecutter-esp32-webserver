@@ -41,5 +41,8 @@ endpt-system: env-test
 endpt-upload: env-test
 	curl ${ESP32_IP}/api/v1/filesystem/README.md --data-binary @- < README.md
 
+endpt-upload-to-folder: env-test
+	curl ${ESP32_IP}/api/v1/filesystem/foo/bar/README.md --data-binary @- < README.md
+
 endpt-delete: env-test
 	curl -X DELETE ${ESP32_IP}/api/v1/filesystem/README.md

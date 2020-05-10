@@ -1,3 +1,4 @@
+#include "errno.h"
 #include "route/v1/filesystem.h"
 #include <sys/param.h>
 
@@ -16,6 +17,67 @@ __unused static const char TAG[] = "route/v1/filesystem";
 
 #define IS_FILE_EXT(filename, ext) \
     (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
+
+
+static int mkdir_if_not_exist(const char *path) {
+    struct stat sb;
+    if (stat(path, &sb) == 0) {
+        //Directory or file exists
+        
+        if(S_ISDIR(sb.st_mode)) {
+            // Is a directory
+            // Do Nothing
+        }
+        else {
+            // Was a file
+            return -1;
+        }
+    }
+    else {
+        // Directory doesn't exist, make it
+        if ( 0 != mkdir(path, S_IRWXU) ) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * @brief Recursively create parent directories for a given path
+ * @param[in] path Path to a file/directory to create paths up to
+ * @param[in] isfile If `true`, do not create the last token.
+ * @returns 0 on success. On failure, a partial directory structure may have
+ * been created.
+ */
+static int mkdir_p(const char *path, bool isfile)
+{
+    int err = -1;
+    char *_path = NULL;
+
+    _path = strdup(path);
+    if(NULL == _path) goto exit;
+
+    errno = 0;
+    for (char *p = _path + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            if(0 != mkdir_if_not_exist(_path)){
+                goto exit;
+            }
+            *p = '/';
+        }
+    }   
+
+    if( !isfile && 0 != mkdir_if_not_exist(_path)) {
+        goto exit;
+    }
+
+    err = 0;
+
+exit:
+    if(_path) free(_path);
+    return err;
+}
 
 /**
  * @brief get the local system pathname from the URI.
@@ -139,6 +201,7 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         /* Send chunk of HTML file containing table entries with file name and size */
         httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
         httpd_resp_sendstr_chunk(req, req->uri);
+        httpd_resp_sendstr_chunk(req, "/");
         httpd_resp_sendstr_chunk(req, entry->d_name);
         if (entry->d_type == DT_DIR) {
             httpd_resp_sendstr_chunk(req, "/");
@@ -227,8 +290,17 @@ esp_err_t filesystem_file_post_handler(httpd_req_t *req)
     }
 
     if(req->content_len == 0) {
-        /* Delete the file */
+        /* Delete the file. NOTE: this means that we don't allow
+         * the upload of 0-byte files. */
         err = filesystem_file_delete_handler(req);
+        goto exit;
+    }
+
+    /* Create folders to path if necessary. */
+    if( 0 != mkdir_p(filepath, true) ) {
+        ESP_LOGE(TAG, "Failed to create directories for: %s", filepath);
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to create directories");
         goto exit;
     }
 
