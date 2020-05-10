@@ -15,7 +15,14 @@ exit:
     return err;
 }
 
-esp_err_t nvs_get_handler(httpd_req_t *req)
+esp_err_t nvs_key_get_handler(httpd_req_t *req)
+{
+    // TODO
+    esp_err_t err = ESP_FAIL;
+    return err;
+}
+
+esp_err_t nvs_root_get_handler(httpd_req_t *req)
 {
     // TODO
     esp_err_t err = ESP_FAIL;
