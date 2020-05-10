@@ -32,8 +32,8 @@
 
 
 static const char *TAG = "{{cookiecutter.project_var_name}}-main";
-extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
-extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
+//extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
+//extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 static EventGroupHandle_t s_wifi_event_group;
 
 #define MDNS_INSTANCE "mds instance"
