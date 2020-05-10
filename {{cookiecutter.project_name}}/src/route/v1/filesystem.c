@@ -79,6 +79,79 @@ exit:
     return err;
 }
 
+
+/**
+ * @brief Delete a file/folder and all its contents
+ *
+ * Based on https://stackoverflow.com/a/42596507
+ */
+int rm_rf(const char path[]){
+    size_t path_len;
+    char *full_path = NULL;
+    DIR *dir = NULL;
+    struct stat stat_path, stat_entry;
+    struct dirent *entry;
+    int err = -1;
+
+    // stat for the path
+    err = stat(path, &stat_path);
+    if( err ) goto exit;
+
+    // If its a file, just delete it
+    if (S_ISDIR(stat_path.st_mode) == 0) {
+        err = unlink(path);
+        goto exit;
+    }
+
+    // if not possible to read the directory for this user
+    if ((dir = opendir(path)) == NULL) {
+        ESP_LOGE(TAG, "Can`t open directory %s", path);
+        err = 1;
+        goto exit;
+    }
+
+    // the length of the path
+    path_len = strlen(path);
+
+    // iteration through entries in the directory
+    while ((entry = readdir(dir)) != NULL) {
+
+        // skip entries "." and ".."
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+            continue;
+
+        // determinate a full path of an entry
+        full_path = calloc(path_len + strlen(entry->d_name) + 2, sizeof(char));
+        strcpy(full_path, path);
+        strcat(full_path, "/");
+        strcat(full_path, entry->d_name);
+
+        // stat for the entry
+        stat(full_path, &stat_entry);
+
+        err = rm_rf(full_path);
+        if(err) goto exit;
+
+        free(full_path);
+    }
+
+    closedir(dir);
+    dir = NULL;
+
+    // remove the devastated directory and close the object of it
+    err = rmdir(path);
+    if(err) {
+        ESP_LOGE(TAG, "Can`t remove directory: %s\n", path);
+        goto exit;
+    }
+
+    err = 0;
+
+exit:
+    if(dir) closedir(dir);
+    return err;
+}
+
 /**
  * @brief get the local system pathname from the URI.
  *
@@ -483,22 +556,22 @@ esp_err_t filesystem_file_delete_handler(httpd_req_t *req)
     }
 
     /* Filename cannot have a trailing '/' */
-    if (filepath[strlen(filepath) - 1] == '/') {
-        ESP_LOGE(TAG, "Invalid filename: %s", filepath);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
-        goto exit;
-    }
+    //if (filepath[strlen(filepath) - 1] == '/') {
+    //    ESP_LOGE(TAG, "Invalid filename: %s", filepath);
+    //    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
+    //    goto exit;
+    //}
 
     if (stat(filepath, &file_stat) == -1) {
-        ESP_LOGE(TAG, "File does not exist: %s", filepath);
+        ESP_LOGE(TAG, "Does not exist: %s", filepath);
         /* Respond with 400 Bad Request */
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File/Directory does not exist");
         goto exit;
     }
 
-    ESP_LOGI(TAG, "Deleting file: %s", filepath);
+    ESP_LOGI(TAG, "Deleting: %s", filepath);
     /* Delete file */
-    unlink(filepath);
+    rm_rf(filepath);
 
     /* Redirect onto root to see the updated file list */
     httpd_resp_set_status(req, "303 See Other");
