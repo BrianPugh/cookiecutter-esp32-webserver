@@ -137,7 +137,6 @@ static size_t nvs_type_to_size(nvs_type_t type) {
     }
 }
 
-#if 0
 /**
  * @brief Reads and converts the value to string
  * @param[out] buf Output buffer to place string into.
@@ -146,11 +145,88 @@ static size_t nvs_type_to_size(nvs_type_t type) {
  * @param[in] key
  * @return The full length (in bytes) of the data. Returns a negative value on error.
  */
-static int nvs_as_str(char *buf, size_t len, const char *namespace, const char *key)
+static int nvs_as_str(char *buf, size_t len, const char *namespace, const char *key, nvs_type_t type)
 {
-    return;
+    assert( len > 21 );  // So we don't have to error check number conversions
+    int outlen = -1;
+    esp_err_t err;
+    nvs_handle_t h = 0;
+
+    err = nvs_open(namespace, NVS_READONLY, &h);
+    if(ESP_OK != err) {
+        ESP_LOGE(TAG, "Couldn't open namespace %s", namespace);
+        goto exit;
+    }
+
+
+#define NVS_CHECK(x) do{ if(ESP_OK != x) { outlen = -1; goto exit;} }while(0)
+    switch(type) {
+        case NVS_TYPE_U8: {
+            uint8_t val;
+            NVS_CHECK(nvs_get_u8(h, key, &val));
+            itoa(val, buf, 10);
+            break;
+        }
+        case NVS_TYPE_I8: {
+            int8_t val;
+            NVS_CHECK(nvs_get_i8(h, key, &val));
+            itoa(val, buf, 10);
+            break;
+        }
+        case NVS_TYPE_U16: {
+            uint16_t val;
+            NVS_CHECK(nvs_get_u16(h, key, &val));
+            itoa(val, buf, 10);
+            break;
+        }
+        case NVS_TYPE_I16: {
+            int16_t val;
+            NVS_CHECK(nvs_get_i16(h, key, &val));
+            itoa(val, buf, 10);
+            break;
+        }
+        case NVS_TYPE_U32: {
+            uint32_t val;
+            NVS_CHECK(nvs_get_u32(h, key, &val));
+            sprintf(buf, "%d", val);
+            break;
+        }
+        case NVS_TYPE_I32: {
+            int32_t val;
+            NVS_CHECK(nvs_get_i32(h, key, &val));
+            itoa(val, buf, 10);
+            break;
+        }
+        case NVS_TYPE_U64: {
+            uint64_t val;
+            NVS_CHECK(nvs_get_u64(h, key, &val));
+            sprintf(buf, "%lld", val);
+            break;
+        }
+        case NVS_TYPE_I64: {
+            int64_t val;
+            NVS_CHECK(nvs_get_i64(h, key, &val));
+            sprintf(buf, "%lld", val);
+            break;
+        }
+        case NVS_TYPE_STR: {
+            //TODO
+            outlen = 0;
+        }
+        case NVS_TYPE_BLOB: {
+            //TODO
+            outlen = 0;
+        }
+        default: 
+            outlen = -2;
+            goto exit;
+    }
+#undef NVS_CHECK
+
+exit:
+    if( h ) nvs_close(h);
+    return outlen;
 }
-#endif
 
 static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *namespace, const char *key) {
     esp_err_t err = ESP_FAIL;
@@ -328,6 +404,7 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
     while (it != NULL) {
         size_t len;
         char size_buf[16] = {0};
+        char value_buf[256] = {0};
         nvs_entry_info_t info;
         nvs_entry_info(it, &info);
         it = nvs_entry_next(it);
@@ -338,20 +415,18 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
         httpd_resp_sendstr_chunk(req, "</td><td>");
         httpd_resp_sendstr_chunk(req, info.key);
         httpd_resp_sendstr_chunk(req, "</td><td>");
-        //TODO value
-        httpd_resp_sendstr_chunk(req, "placeholder");
+
+        /* Value */
+        len = nvs_as_str(value_buf, sizeof(value_buf), namespace, info.key, info.type);
+        if(len < 0) {
+            // TODO: error handling
+        }
+        httpd_resp_sendstr_chunk(req, value_buf);
+
         httpd_resp_sendstr_chunk(req, "</td><td>");
         httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));
         httpd_resp_sendstr_chunk(req, "</td><td>");
-        if(info.type == NVS_TYPE_STR) {
-            //TODO
-            len = 0;
-        }
-        else if(info.type == NVS_TYPE_BLOB) {
-            //TODO
-            len = 0;
-        }
-        else {
+        if(info.type != NVS_TYPE_STR || info.type != NVS_TYPE_BLOB) {
             len = nvs_type_to_size(info.type);
         }
         itoa(len, size_buf, 10);
