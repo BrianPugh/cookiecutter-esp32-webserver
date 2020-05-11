@@ -269,6 +269,65 @@ exit:
     return err;
 }
 
+static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespace)
+{
+    esp_err_t err = ESP_FAIL;
+    extern const unsigned char script_start[] asm("_binary_api_v1_nvs_html_start");
+    extern const unsigned char script_end[]   asm("_binary_api_v1_nvs_html_end");
+    const size_t script_size = script_end - script_start;
+
+    //httpd_resp_send_chunk(req, (const char *)script_start, script_size);
+    
+    /* Send file-list table definition and column labels */
+    httpd_resp_sendstr_chunk(req,
+        "<table class=\"fixed\" border=\"1\">"
+        "<col width=\"400px\" />"
+        "<col width=\"400px\" />"
+        "<col width=\"400px\" />"
+        "<col width=\"400px\" />"
+        "<col width=\"400px\" />"
+        "<thead><tr>"
+        "<th>Namespace</th>"
+        "<th>Key</th>"
+        "<th>Value</th>"
+        "<th>Dtype</th>"
+        "<th>Size (Bytes)</th>"
+        "</thead>"
+        "<tbody>");
+
+#if 0
+    nvs_iterator_t it = nvs_entry_find(NULL, namespace, NVS_TYPE_ANY);
+    while (it != NULL) {
+        nvs_entry_info_t info;
+        nvs_entry_info(it, &info);
+        it = nvs_entry_next(it);
+        ESP_LOGI(TAG, "key '%s', type '%d' \n", info.key, info.type);
+    }
+    // TODO
+#endif
+
+    /* Finish the file list table */
+    httpd_resp_sendstr_chunk(req, "</tbody></table>");
+
+    /* Send remaining chunk of HTML file to complete it */
+    httpd_resp_sendstr_chunk(req, "</body></html>");
+
+    /* Send empty chunk to signal HTTP response completion */
+    httpd_resp_sendstr_chunk(req, NULL);
+
+
+    err = ESP_OK;
+
+    return err;
+}
+
+static esp_err_t nvs_root_get_handler(httpd_req_t *req)
+{
+    esp_err_t err = ESP_FAIL;
+    // TODO
+    return err;
+}
+
 esp_err_t nvs_post_handler(httpd_req_t *req)
 {
     
@@ -286,12 +345,9 @@ exit:
 
 esp_err_t nvs_get_handler(httpd_req_t *req)
 {
-    // TODO
     esp_err_t err = ESP_FAIL;
     char namespace[NAMESPACE_MAX] = {0};
     char key[KEY_MAX] = {0};
-    extern const unsigned char script_start[] asm("_binary_api_v1_nvs_html_start");
-    extern const unsigned char script_end[]   asm("_binary_api_v1_nvs_html_end");
     uint8_t res;
 
     res = get_namespace_key_from_uri(namespace, key, req);
@@ -314,20 +370,13 @@ esp_err_t nvs_get_handler(httpd_req_t *req)
 
     if(res & PARSE_NAMESPACE) {
         /* Display key/values within this namespace */
-        ESP_LOGI(TAG, "Parsed namespace: \"%s\"", namespace);
-
-		nvs_iterator_t it = nvs_entry_find(NULL, namespace, NVS_TYPE_ANY);
-		while (it != NULL) {
-            nvs_entry_info_t info;
-            nvs_entry_info(it, &info);
-            it = nvs_entry_next(it);
-            ESP_LOGI(TAG, "key '%s', type '%d' \n", info.key, info.type);
-		}
-        // TODO
+        err = nvs_namespace_get_handler(req, namespace);
+        goto exit;
     }
     else {
         /* Display all key/values across all namespaces */
-        // TODO
+        err = nvs_root_get_handler(req);
+        goto exit;
     }
 
 exit:
