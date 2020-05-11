@@ -131,7 +131,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
     cJSON *root = NULL;
     nvs_handle_t h = 0;
 
-    nvs_iterator_t it = nvs_entry_find(NULL, namespace, NVS_TYPE_ANY);
+    nvs_iterator_t it = nvs_entry_find(NVS_DEFAULT_PART_NAME, namespace, NVS_TYPE_ANY);
     while (it != NULL) {
         nvs_entry_info(it, &info);
         if(0 == strcmp(info.key, key)) {
@@ -162,7 +162,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             uint8_t val;
             err = nvs_get_u8(h, key, &val);
             if(ESP_OK != err) goto exit;
-            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 1;
             break;
         }
@@ -170,7 +170,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             int8_t val;
             err = nvs_get_i8(h, key, &val);
             if(ESP_OK != err) goto exit;
-            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 1;
             break;
         }
@@ -178,7 +178,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             uint16_t val;
             err = nvs_get_u16(h, key, &val);
             if(ESP_OK != err) goto exit;
-            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 2;
             break;
         }
@@ -186,7 +186,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             int16_t val;
             err = nvs_get_i16(h, key, &val);
             if(ESP_OK != err) goto exit;
-            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 2;
             break;
         }
@@ -194,7 +194,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             uint32_t val;
             err = nvs_get_u32(h, key, &val);
             if(ESP_OK != err) goto exit;
-            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 4;
             break;
         }
@@ -202,7 +202,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             int32_t val;
             err = nvs_get_i32(h, key, &val);
             if(ESP_OK != err) goto exit;
-            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 4;
             break;
         }
@@ -210,7 +210,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             uint32_t val;
             err = nvs_get_u64(h, key, &val);
             if(ESP_OK != err) goto exit;
-            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 8;
             break;
         }
@@ -218,7 +218,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             int32_t val;
             err = nvs_get_i64(h, key, &val);
             if(ESP_OK != err) goto exit;
-            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 8;
             break;
         }
@@ -236,7 +236,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             if(ESP_OK != err) goto exit;
 
             cJSON *obj;
-            obj = cJSON_AddStringToObject(root, "key", val);
+            obj = cJSON_AddStringToObject(root, "value", val);
             free(val);
             if(NULL == obj) {
                 err = ESP_FAIL;

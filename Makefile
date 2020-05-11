@@ -51,4 +51,13 @@ endpt-delete-folder: env-test endpt-upload-to-folder
 	curl -X DELETE ${ESP32_IP}/api/v1/filesystem/foo/
 
 endpt-nvs-namespace-key: env-test
-	curl ${ESP32_IP}/api/v1/nvs/foo/bar
+	curl ${ESP32_IP}/api/v1/nvs/user/key1
+	curl ${ESP32_IP}/api/v1/nvs/user/key2
+
+nvs:
+	# Generate a flashable bin for the NVS partition
+	python3 ${IDF_PATH}/components/nvs_flash/nvs_partition_generator/nvs_partition_gen.py generate nvs.csv nvs.bin 0x4000
+
+nvs-flash: nvs
+	# Flash the NVS binary
+	esptool.py --chip esp32 -p /dev/ttyUSB1 -b 921600 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 40m --flash_size 4MB 0x9000 nvs.bin 

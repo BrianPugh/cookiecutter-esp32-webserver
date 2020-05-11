@@ -1,0 +1,4 @@
+key,type,encoding,value
+user,namespace,,
+key1,data,u8,1
+key2,data,string,test string

@@ -6,3 +6,4 @@ sdkconfig
 
 *.pyc
 __pycache__
+nvs.bin
