@@ -1,6 +1,7 @@
-#include "route/v1/nvs.h"
 #include "nvs.h"
 #include "nvs_flash.h"
+#include "route/v1/nvs.h"
+#include "sodium.h"
 #include <sys/param.h>
 
 // Including NULL-terminator
@@ -158,6 +159,7 @@ static int nvs_as_str(char *buf, size_t len, const char *namespace, const char *
         goto exit;
     }
 
+    outlen = nvs_type_to_size(type);
 
 #define NVS_CHECK(x) do{ if(ESP_OK != x) { outlen = -1; goto exit;} }while(0)
     switch(type) {
@@ -210,12 +212,30 @@ static int nvs_as_str(char *buf, size_t len, const char *namespace, const char *
             break;
         }
         case NVS_TYPE_STR: {
-            //TODO
-            outlen = 0;
+            NVS_CHECK(nvs_get_str(h, key, NULL, (size_t *)&outlen));
+            if(outlen > len) {
+                strlcpy(buf, "<exceeds buffer length>", len);
+                goto exit;
+            }
+            NVS_CHECK(nvs_get_str(h, key, buf, (size_t *)&outlen));
+            break;
         }
         case NVS_TYPE_BLOB: {
-            //TODO
-            outlen = 0;
+            uint8_t *bin;
+            NVS_CHECK(nvs_get_blob(h, key, NULL, (size_t *)&outlen));
+            if(outlen > (len / 2)) {
+                strlcpy(buf, "<exceeds buffer length>", len);
+                goto exit;
+            }
+            if((bin = malloc(outlen)) == NULL) goto exit;
+            // TODO hex conversion
+            if( ESP_OK != nvs_get_blob(h, key, bin, (size_t *)&outlen)) {
+                free(bin);
+                goto exit;
+            }
+            sodium_bin2hex(buf, len, bin, outlen);
+            free(bin);
+            break;
         }
         default: 
             outlen = -2;
@@ -225,6 +245,7 @@ static int nvs_as_str(char *buf, size_t len, const char *namespace, const char *
 
 exit:
     if( h ) nvs_close(h);
+    ESP_LOGD(TAG, "outlen: %d", outlen);
     return outlen;
 }
 
@@ -402,7 +423,7 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
 
     nvs_iterator_t it = nvs_entry_find(NVS_DEFAULT_PART_NAME, namespace, NVS_TYPE_ANY);
     while (it != NULL) {
-        size_t len;
+        int len;
         char size_buf[16] = {0};
         char value_buf[256] = {0};
         nvs_entry_info_t info;
@@ -426,9 +447,6 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
         httpd_resp_sendstr_chunk(req, "</td><td>");
         httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));
         httpd_resp_sendstr_chunk(req, "</td><td>");
-        if(info.type != NVS_TYPE_STR || info.type != NVS_TYPE_BLOB) {
-            len = nvs_type_to_size(info.type);
-        }
         itoa(len, size_buf, 10);
         httpd_resp_sendstr_chunk(req, size_buf);
         httpd_resp_sendstr_chunk(req, "</td></tr>\n");
