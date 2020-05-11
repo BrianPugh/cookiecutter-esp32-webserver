@@ -29,19 +29,14 @@ esp_err_t nvs_post_handler(httpd_req_t *req);
 /**
  * @brief Get a NVS value
  *
- *     curl ${ESP32_IP}/api/v1/nvs/${KEY}
+ *     curl ${ESP32_IP}/api/v1/nvs
+ *     curl ${ESP32_IP}/api/v1/nvs/${NAMESPACE}
+ *     curl ${ESP32_IP}/api/v1/nvs/${NAMESPACE}/${KEY}
+ *
  * where:
  *     KEY - NVS key to look up
  */
-esp_err_t nvs_key_get_handler(httpd_req_t *req);
-
-
-/**
- * @brief Launch NVS explorer
- *
- *     curl ${ESP32_IP}/api/v1/nvs
- */
-esp_err_t nvs_root_get_handler(httpd_req_t *req);
+esp_err_t nvs_get_handler(httpd_req_t *req);
 
 
 #endif

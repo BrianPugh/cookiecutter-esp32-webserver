@@ -50,3 +50,5 @@ endpt-delete: env-test endpt-upload
 endpt-delete-folder: env-test endpt-upload-to-folder
 	curl -X DELETE ${ESP32_IP}/api/v1/filesystem/foo/
 
+endpt-nvs-namespace-key: env-test
+	curl ${ESP32_IP}/api/v1/nvs/foo/bar
