@@ -214,7 +214,7 @@ static int nvs_as_str(char *buf, size_t len, const char *namespace, const char *
         case NVS_TYPE_STR: {
             NVS_CHECK(nvs_get_str(h, key, NULL, (size_t *)&outlen));
             if(outlen > len) {
-                strlcpy(buf, "<exceeds buffer length>", len);
+                strlcpy(buf, "&lt;exceeds buffer length&gt;", len);
                 goto exit;
             }
             NVS_CHECK(nvs_get_str(h, key, buf, (size_t *)&outlen));
@@ -223,13 +223,12 @@ static int nvs_as_str(char *buf, size_t len, const char *namespace, const char *
         case NVS_TYPE_BLOB: {
             uint8_t *bin;
             NVS_CHECK(nvs_get_blob(h, key, NULL, (size_t *)&outlen));
-            if(outlen > (len / 2)) {
-                strlcpy(buf, "<exceeds buffer length>", len);
+            if(outlen > (len-1) / 2) {
+                strlcpy(buf, "&lt;exceeds buffer length&gt;", len);
                 goto exit;
             }
             if((bin = malloc(outlen)) == NULL) goto exit;
-            // TODO hex conversion
-            if( ESP_OK != nvs_get_blob(h, key, bin, (size_t *)&outlen)) {
+            if(ESP_OK != nvs_get_blob(h, key, bin, (size_t *)&outlen)) {
                 free(bin);
                 goto exit;
             }
@@ -395,6 +394,12 @@ exit:
     return err;
 }
 
+/**
+ * @brief Render the html table with NVS contents.
+ * @param[in] req
+ * @param[in] namespace Namespace to iterate over. Set to NULL to iterate over
+ * all namespaces
+ */
 static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespace)
 {
     esp_err_t err = ESP_FAIL;
@@ -429,18 +434,20 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
         nvs_entry_info_t info;
         nvs_entry_info(it, &info);
         it = nvs_entry_next(it);
-        ESP_LOGI(TAG, "key '%s', type '%d'", info.key, info.type);
+
+        ESP_LOGD(TAG, "key '%s', type '%d'", info.key, info.type);
 
         httpd_resp_sendstr_chunk(req, "<tr><td>");
-        httpd_resp_sendstr_chunk(req, namespace);
+        httpd_resp_sendstr_chunk(req, info.namespace_name);
         httpd_resp_sendstr_chunk(req, "</td><td>");
         httpd_resp_sendstr_chunk(req, info.key);
         httpd_resp_sendstr_chunk(req, "</td><td>");
 
         /* Value */
-        len = nvs_as_str(value_buf, sizeof(value_buf), namespace, info.key, info.type);
+        len = nvs_as_str(value_buf, sizeof(value_buf), info.namespace_name, info.key, info.type);
         if(len < 0) {
             // TODO: error handling
+            ESP_LOGE(TAG, "Unhandled error");
         }
         httpd_resp_sendstr_chunk(req, value_buf);
 
@@ -464,13 +471,6 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
 
     err = ESP_OK;
 
-    return err;
-}
-
-static esp_err_t nvs_root_get_handler(httpd_req_t *req)
-{
-    esp_err_t err = ESP_FAIL;
-    // TODO
     return err;
 }
 
@@ -521,7 +521,7 @@ esp_err_t nvs_get_handler(httpd_req_t *req)
     }
     else {
         /* Display all key/values across all namespaces */
-        err = nvs_root_get_handler(req);
+        err = nvs_namespace_get_handler(req, NULL);
         goto exit;
     }
 
