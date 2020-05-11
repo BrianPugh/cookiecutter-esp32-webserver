@@ -123,6 +123,35 @@ static const char *nvs_type_to_str(nvs_type_t type) {
     }
 }
 
+static size_t nvs_type_to_size(nvs_type_t type) {
+    switch(type) {
+        case NVS_TYPE_U8: return 1;
+        case NVS_TYPE_I8: return 1;
+        case NVS_TYPE_U16: return 2;
+        case NVS_TYPE_I16: return 2;
+        case NVS_TYPE_U32: return 4;
+        case NVS_TYPE_I32: return 4;
+        case NVS_TYPE_U64: return 8;
+        case NVS_TYPE_I64: return 8;
+        default: return 0;
+    }
+}
+
+#if 0
+/**
+ * @brief Reads and converts the value to string
+ * @param[out] buf Output buffer to place string into.
+ * @param[in] len Length of output buffer
+ * @param[in] namespace 
+ * @param[in] key
+ * @return The full length (in bytes) of the data. Returns a negative value on error.
+ */
+static int nvs_as_str(char *buf, size_t len, const char *namespace, const char *key)
+{
+    return;
+}
+#endif
+
 static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *namespace, const char *key) {
     esp_err_t err = ESP_FAIL;
     // Find the key within the namespace
@@ -207,7 +236,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             break;
         }
         case NVS_TYPE_U64: {
-            uint32_t val;
+            uint64_t val;
             err = nvs_get_u64(h, key, &val);
             if(ESP_OK != err) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
@@ -215,7 +244,7 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             break;
         }
         case NVS_TYPE_I64: {
-            int32_t val;
+            int64_t val;
             err = nvs_get_i64(h, key, &val);
             if(ESP_OK != err) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
@@ -295,16 +324,40 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
         "</thead>"
         "<tbody>");
 
-#if 0
-    nvs_iterator_t it = nvs_entry_find(NULL, namespace, NVS_TYPE_ANY);
+    nvs_iterator_t it = nvs_entry_find(NVS_DEFAULT_PART_NAME, namespace, NVS_TYPE_ANY);
     while (it != NULL) {
+        size_t len;
+        char size_buf[16] = {0};
         nvs_entry_info_t info;
         nvs_entry_info(it, &info);
         it = nvs_entry_next(it);
-        ESP_LOGI(TAG, "key '%s', type '%d' \n", info.key, info.type);
+        ESP_LOGI(TAG, "key '%s', type '%d'", info.key, info.type);
+
+        httpd_resp_sendstr_chunk(req, "<tr><td>");
+        httpd_resp_sendstr_chunk(req, namespace);
+        httpd_resp_sendstr_chunk(req, "</td><td>");
+        httpd_resp_sendstr_chunk(req, info.key);
+        httpd_resp_sendstr_chunk(req, "</td><td>");
+        //TODO value
+        httpd_resp_sendstr_chunk(req, "placeholder");
+        httpd_resp_sendstr_chunk(req, "</td><td>");
+        httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));
+        httpd_resp_sendstr_chunk(req, "</td><td>");
+        if(info.type == NVS_TYPE_STR) {
+            //TODO
+            len = 0;
+        }
+        else if(info.type == NVS_TYPE_BLOB) {
+            //TODO
+            len = 0;
+        }
+        else {
+            len = nvs_type_to_size(info.type);
+        }
+        itoa(len, size_buf, 10);
+        httpd_resp_sendstr_chunk(req, size_buf);
+        httpd_resp_sendstr_chunk(req, "</td></tr>\n");
     }
-    // TODO
-#endif
 
     /* Finish the file list table */
     httpd_resp_sendstr_chunk(req, "</tbody></table>");
