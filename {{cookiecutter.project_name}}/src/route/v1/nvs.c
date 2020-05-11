@@ -1,5 +1,6 @@
 #include "route/v1/nvs.h"
 #include "nvs.h"
+#include "nvs_flash.h"
 #include <sys/param.h>
 
 // Including NULL-terminator
@@ -10,6 +11,8 @@
 #define PARSE_NAMESPACE ( 1 << 0 )  // Namespace was parsed
 #define PARSE_KEY       ( 1 << 1 )  // Key was parsed
 #define PARSE_ERROR       ( 1 << 7 ) // Error during parsing
+
+#define CJSON_CHECK(x) if(NULL == x) {err = ESP_FAIL; goto exit;}
 
 static const char TAG[] = "route/v1/nvs";
 
@@ -23,7 +26,6 @@ static uint8_t get_namespace_key_from_uri(char *namespace, char *key, const http
 
     uint8_t res = 0;
     const char *uri = req->uri;
-    char *p;
 
     ESP_LOGD(TAG, "Parsing %s", uri);
 
@@ -105,6 +107,168 @@ static uint8_t get_namespace_key_from_uri(char *namespace, char *key, const http
     return res;
 }
 
+static const char *nvs_type_to_str(nvs_type_t type) {
+    switch(type) {
+        case NVS_TYPE_U8: return "uint8";
+        case NVS_TYPE_I8: return "int8";
+        case NVS_TYPE_U16: return "uint16";
+        case NVS_TYPE_I16: return "int16";
+        case NVS_TYPE_U32: return "uint32";
+        case NVS_TYPE_I32: return "int32";
+        case NVS_TYPE_U64: return "uint64";
+        case NVS_TYPE_I64: return "int64";
+        case NVS_TYPE_STR: return "string";
+        case NVS_TYPE_BLOB: return "binary";
+        default: return "UNKNOWN";
+    }
+}
+
+static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *namespace, const char *key) {
+    esp_err_t err = ESP_FAIL;
+    // Find the key within the namespace
+    nvs_entry_info_t info;
+    const char *msg = NULL;
+    cJSON *root = NULL;
+    nvs_handle_t h = 0;
+
+    nvs_iterator_t it = nvs_entry_find(NULL, namespace, NVS_TYPE_ANY);
+    while (it != NULL) {
+        nvs_entry_info(it, &info);
+        if(0 == strcmp(info.key, key)) {
+            break;
+        }
+        it = nvs_entry_next(it);
+    }
+    if(it == NULL) {
+        /* Key wasn't found */
+        ESP_LOGE(TAG, "Couldn't find %s in namespace %s", key, namespace);
+        goto exit;
+    }
+
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "namespace", namespace);
+    cJSON_AddStringToObject(root, "key", key);
+    cJSON_AddStringToObject(root, "dtype", nvs_type_to_str(info.type));
+
+    err = nvs_open(namespace, NVS_READONLY, &h);
+    if(ESP_OK != err) {
+        ESP_LOGE(TAG, "Couldn't open namespace %s", namespace);
+        goto exit;
+    }
+
+    size_t dsize;
+    switch(info.type) {
+        case NVS_TYPE_U8:{
+            uint8_t val;
+            err = nvs_get_u8(h, key, &val);
+            if(ESP_OK != err) goto exit;
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            dsize = 1;
+            break;
+        }
+        case NVS_TYPE_I8: {
+            int8_t val;
+            err = nvs_get_i8(h, key, &val);
+            if(ESP_OK != err) goto exit;
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            dsize = 1;
+            break;
+        }
+        case NVS_TYPE_U16: {
+            uint16_t val;
+            err = nvs_get_u16(h, key, &val);
+            if(ESP_OK != err) goto exit;
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            dsize = 2;
+            break;
+        }
+        case NVS_TYPE_I16: {
+            int16_t val;
+            err = nvs_get_i16(h, key, &val);
+            if(ESP_OK != err) goto exit;
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            dsize = 2;
+            break;
+        }
+        case NVS_TYPE_U32: {
+            uint32_t val;
+            err = nvs_get_u32(h, key, &val);
+            if(ESP_OK != err) goto exit;
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            dsize = 4;
+            break;
+        }
+        case NVS_TYPE_I32: {
+            int32_t val;
+            err = nvs_get_i32(h, key, &val);
+            if(ESP_OK != err) goto exit;
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            dsize = 4;
+            break;
+        }
+        case NVS_TYPE_U64: {
+            uint32_t val;
+            err = nvs_get_u64(h, key, &val);
+            if(ESP_OK != err) goto exit;
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            dsize = 8;
+            break;
+        }
+        case NVS_TYPE_I64: {
+            int32_t val;
+            err = nvs_get_i64(h, key, &val);
+            if(ESP_OK != err) goto exit;
+            CJSON_CHECK(cJSON_AddNumberToObject(root, "key", val));
+            dsize = 8;
+            break;
+        }
+        case NVS_TYPE_STR: {
+            char *val;
+            err = nvs_get_str(h, key, NULL, &dsize);
+            if(ESP_OK != err) goto exit;
+            val = malloc(dsize);
+            if(NULL == val) {
+                ESP_LOGE(TAG, "OOM");
+                err = ESP_FAIL;
+                goto exit;
+            }
+            err = nvs_get_str(h, key, val, &dsize);
+            if(ESP_OK != err) goto exit;
+
+            cJSON *obj;
+            obj = cJSON_AddStringToObject(root, "key", val);
+            free(val);
+            if(NULL == obj) {
+                err = ESP_FAIL;
+                goto exit;
+            }
+            break;
+        }
+        case NVS_TYPE_BLOB: {
+            uint8_t *val;
+            err = nvs_get_blob(h, key, NULL, &dsize);
+            if(ESP_OK != err) goto exit;
+            // TODO: parse and convert value
+            break;
+        }
+        default:
+            // Do Nothing
+            break;
+    }
+
+    cJSON_AddNumberToObject(root, "size", dsize);
+
+    msg = cJSON_Print(root);
+    httpd_resp_sendstr(req, msg);
+    err = ESP_OK;
+
+exit:
+    if( msg ) free(msg);
+    if( root ) cJSON_Delete(root);
+    if( h ) nvs_close(h);
+    return err;
+}
+
 esp_err_t nvs_post_handler(httpd_req_t *req)
 {
     
@@ -128,19 +292,42 @@ esp_err_t nvs_get_handler(httpd_req_t *req)
     char key[KEY_MAX] = {0};
     extern const unsigned char script_start[] asm("_binary_api_v1_nvs_html_start");
     extern const unsigned char script_end[]   asm("_binary_api_v1_nvs_html_end");
+    uint8_t res;
 
-    {
-        uint8_t res;
-        res = get_namespace_key_from_uri(namespace, key, req);
-        if(res & PARSE_ERROR) {
-            goto exit;
-        }
-        if(res & PARSE_NAMESPACE) {
-            ESP_LOGI(TAG, "Parsed namespace: \"%s\"", namespace);
-        }
-        if(res & PARSE_KEY) {
-            ESP_LOGI(TAG, "Parsed key: \"%s\"", key);
-        }
+    res = get_namespace_key_from_uri(namespace, key, req);
+    if(res & PARSE_ERROR) {
+        goto exit;
+    }
+
+    if(res & PARSE_NAMESPACE && res & PARSE_KEY) {
+        /* Directly return the value in form:
+         * {
+         *     "namespace": "<namespace>",
+         *     "key": "<key>",
+         *     "value": <value>,
+         *     "dtype": <str>,
+         * }
+         */
+        err = nvs_namespace_key_get_handler(req, namespace, key);
+        goto exit;
+    }
+
+    if(res & PARSE_NAMESPACE) {
+        /* Display key/values within this namespace */
+        ESP_LOGI(TAG, "Parsed namespace: \"%s\"", namespace);
+
+		nvs_iterator_t it = nvs_entry_find(NULL, namespace, NVS_TYPE_ANY);
+		while (it != NULL) {
+            nvs_entry_info_t info;
+            nvs_entry_info(it, &info);
+            it = nvs_entry_next(it);
+            ESP_LOGI(TAG, "key '%s', type '%d' \n", info.key, info.type);
+		}
+        // TODO
+    }
+    else {
+        /* Display all key/values across all namespaces */
+        // TODO
     }
 
 exit:
