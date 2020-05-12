@@ -14,15 +14,16 @@
 /**
  * @brief Update NVS key/value pairs. 
  *
- *      curl -X POST ${ESP32_IP}/api/v1/nvs --data '{"key": value}'
+ *      curl -X POST ${ESP32_IP}/api/v1/nvs/namespace --data '{"key": value}'
  *
  * where:
  *     ESP32_IP - IP address of the device
  *     "key" - key to store under
  *     "value" - value to store at key
  *
- * Datatype is interpretted from the json value datatype. Binary data
- * is currently not supported.
+ * Multiple values can be updated in a namespace from a single command.
+ * Datatype is interpretted from the existing NVS object.
+ * Binary data is currently not supported.
  */
 esp_err_t nvs_post_handler(httpd_req_t *req);
 

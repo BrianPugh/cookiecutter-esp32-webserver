@@ -23,7 +23,6 @@ static const char TAG[] = "route/v1/nvs";
 static uint8_t get_namespace_key_from_uri(char *namespace, char *key, const httpd_req_t *req)
 {
     assert(namespace);
-    assert(key);
 
     uint8_t res = 0;
     const char *uri = req->uri;
@@ -91,7 +90,9 @@ static uint8_t get_namespace_key_from_uri(char *namespace, char *key, const http
             res |= PARSE_ERROR;
             return res;
         }
-        strcpy(key, uri);
+        if(key) {
+            strcpy(key, uri);
+        }
         return res;
     }
     {
@@ -101,8 +102,10 @@ static uint8_t get_namespace_key_from_uri(char *namespace, char *key, const http
             res |= PARSE_ERROR;
             return res;
         }
-        memcpy(key, uri, len);
-        key[len] = '\0';
+        if(key) {
+            memcpy(key, uri, len);
+            key[len] = '\0';
+        }
     }
 
     return res;
@@ -137,6 +140,24 @@ static size_t nvs_type_to_size(nvs_type_t type) {
         default: return 0;
     }
 }
+
+static esp_err_t nvs_type_set_number(nvs_handle_t h, nvs_type_t type, const char *key, double val) {
+    esp_err_t err = ESP_FAIL;
+    switch(type) {
+        case NVS_TYPE_U8:  err = nvs_set_u8( h, key, (uint8_t) val); break;
+        case NVS_TYPE_I8:  err = nvs_set_i8( h, key, (int8_t)  val); break;
+        case NVS_TYPE_U16: err = nvs_set_u16(h, key, (uint16_t)val); break;
+        case NVS_TYPE_I16: err = nvs_set_i16(h, key, (int16_t) val); break;
+        case NVS_TYPE_U32: err = nvs_set_u32(h, key, (uint32_t)val); break;
+        case NVS_TYPE_I32: err = nvs_set_i32(h, key, (int32_t) val); break;
+        case NVS_TYPE_U64: err = nvs_set_u64(h, key, (uint64_t)val); break;
+        case NVS_TYPE_I64: err = nvs_set_i64(h, key, (int64_t) val); break;
+        default:
+            break;
+    }
+    return err;
+}
+
 
 /**
  * @brief Reads and converts the value to string
@@ -476,16 +497,93 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
 
 esp_err_t nvs_post_handler(httpd_req_t *req)
 {
-    
     esp_err_t err = ESP_FAIL;
-    cJSON *root;
+    char namespace[NAMESPACE_MAX] = {0};
+    cJSON *root = NULL;
+    nvs_handle_t h = 0;
+    uint8_t res;
+    nvs_iterator_t it;
+    cJSON *elem;
+
+    res = get_namespace_key_from_uri(namespace, NULL, req);
+    if(res & PARSE_ERROR) {
+        goto exit;
+    }
+    if(res & PARSE_KEY) {
+        // Shouldn't supply this value
+        goto exit;
+    }
+    if(!(res & PARSE_NAMESPACE)) {
+        goto exit;
+    }
+
     if(ESP_OK != parse_post_request(&root, req)) {
         goto exit;
     }
 
-    //TODO
+    /* Open the namespace */
+    err = nvs_open(namespace, NVS_READWRITE, &h);
+    if(ESP_OK != err) goto exit;
+
+    /* Iterate over all provided keys */
+    cJSON_ArrayForEach(elem, root) {
+        nvs_entry_info_t info;
+        char *key = elem->string;
+        bool found = false;
+
+        cJSON *item;
+        item = cJSON_GetObjectItemCaseSensitive(root, elem->string);
+        if(NULL == item) goto exit;
+
+        it = nvs_entry_find(NVS_DEFAULT_PART_NAME, namespace, NVS_TYPE_ANY);
+
+        /* Get the info for this particular namespace/key */
+        while (it != NULL) {
+            nvs_entry_info(it, &info);
+            if(0 == strcmp(info.key, key)) {
+                found = true;
+                break;
+            }
+            it = nvs_entry_next(it);
+        }
+        nvs_release_iterator(it);
+        it = NULL;
+        if(!found) goto exit;
+
+        /* Update the found key */
+        if(info.type == NVS_TYPE_STR) {
+            if(! cJSON_IsString(item)) {
+                ESP_LOGE(TAG, "Value for key \"%s\" must be a string", key);
+                err = ESP_FAIL;
+                goto exit;
+            }
+            err = nvs_set_str(h, key, item->valuestring);
+        }
+        else if(info.type == NVS_TYPE_BLOB) {
+            // TODO
+            // Cannot handle Blob types for now.
+            // Maybe expect input to be hex encoded and convert.
+            goto exit;
+        }
+        else {
+            if(! cJSON_IsNumber(item)) {
+                ESP_LOGE(TAG, "Value for key \"%s\" must be a number", key);
+                err = ESP_FAIL;
+                goto exit;
+            }
+            err = nvs_type_set_number(h, info.type, key, item->valuedouble);
+        }
+
+        if(ESP_OK != err) goto exit;
+    }
+
+    err = ESP_OK;
     
 exit:
+    if(root) cJSON_Delete(root);
+    if( h ) nvs_close(h);
+    nvs_release_iterator(it);
+    httpd_resp_send_chunk(req, NULL, 0);
     return err;
 }
 

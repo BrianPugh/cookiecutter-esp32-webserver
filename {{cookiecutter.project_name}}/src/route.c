@@ -21,11 +21,12 @@ esp_err_t register_routes() {
 	/* Add all routes HERE */
     esp_err_t err = ESP_OK;
 
+    // TODO change admin routes to /admin/nvs/* and /admin/filelsystem/*
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_FILESYSTEM "/*", HTTP_DELETE, filesystem_file_delete_handler));
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_FILESYSTEM "/*", HTTP_GET, filesystem_file_get_handler));
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_FILESYSTEM, HTTP_GET, filesystem_file_get_handler));
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_FILESYSTEM "/*", HTTP_POST, filesystem_file_post_handler));
-    ERR_CHECK(server_register(PROJECT_ROUTE_V1_NVS, HTTP_POST, nvs_post_handler));
+    ERR_CHECK(server_register(PROJECT_ROUTE_V1_NVS "/*", HTTP_POST, nvs_post_handler));
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_NVS "/*", HTTP_GET, nvs_get_handler));
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_NVS, HTTP_GET, nvs_get_handler));
     ERR_CHECK(server_register("/api/v1/led/timer", HTTP_POST, led_timer_post_handler));

@@ -61,3 +61,6 @@ nvs:
 nvs-flash: nvs
 	# Flash the NVS binary
 	esptool.py --chip esp32 -p /dev/ttyUSB1 -b 921600 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 40m --flash_size 4MB 0x9000 nvs.bin 
+
+nvs-update: env-test
+	curl -X POST ${ESP32_IP}/api/v1/nvs/user --data '{"key1": 7}'
