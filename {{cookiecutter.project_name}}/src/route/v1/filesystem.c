@@ -20,6 +20,23 @@ __unused static const char TAG[] = "route/v1/filesystem";
     (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
 
 
+/**
+ * @returns true if browser, false otherwise.
+ */
+static bool detect_if_browser(httpd_req_t *req)
+{
+    char buf[10] = {0};
+    httpd_req_get_hdr_value_str(req, "ACCEPT", buf, sizeof(buf));
+    if(0 == strcmp(buf, "text/html")) {
+        //hacky; generally this field starts with text/html, so this 
+        //prevents us from having to allocate for the entire field.
+        ESP_LOGI(TAG, "GET request came from a browser");
+        return true;
+    }
+    return false;
+}
+
+
 static int mkdir_if_not_exist(const char *path) {
     struct stat sb;
     if (stat(path, &sb) == 0) {
@@ -501,8 +518,13 @@ esp_err_t filesystem_file_get_handler(httpd_req_t *req)
     FILE *fd = NULL;
     struct stat file_stat;
     char *chunk = ((server_ctx_t *)req->user_ctx)->scratch;
+    bool serve_html;  // currently inactive
 
     char *filepath = get_path_from_uri(req);
+
+    // TODO: use this information to determine if we should respond
+    // with HTML or JSON
+    serve_html = detect_if_browser(req);
 
     if (!filepath) {
         ESP_LOGE(TAG, "Invalid filepath : %s", filepath);
