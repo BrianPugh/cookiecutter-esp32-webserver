@@ -24,4 +24,14 @@ esp_err_t register_routes();
 esp_err_t parse_post_request(cJSON **json, httpd_req_t *req);
 
 
+/**
+ * @brief Detects if requester was a browser or not.
+ *
+ * Currently does this by checking if the first entry in the ACCEPT field is
+ * `text/html`
+ *
+ * @returns true if browser, false otherwise.
+ */
+bool detect_if_browser(httpd_req_t *req);
+
 #endif

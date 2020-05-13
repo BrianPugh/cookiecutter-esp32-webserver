@@ -71,3 +71,19 @@ esp_err_t parse_post_request(cJSON **json, httpd_req_t *req)
     return ESP_OK;
 }
 
+/**
+ * @returns true if browser, false otherwise.
+ */
+bool detect_if_browser(httpd_req_t *req)
+{
+    char buf[10] = {0};
+    httpd_req_get_hdr_value_str(req, "ACCEPT", buf, sizeof(buf));
+    if(0 == strcmp(buf, "text/html")) {
+        //hacky; generally this field starts with text/html, so this 
+        //prevents us from having to allocate for the entire field.
+        ESP_LOGI(TAG, "GET request came from a browser");
+        return true;
+    }
+    return false;
+}
+
