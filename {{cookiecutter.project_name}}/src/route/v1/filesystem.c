@@ -262,6 +262,7 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
     char entrypath[MAX_FILE_PATH];
     char entrysize[16];
     const char *entrytype;
+    bool serve_html;
 
     struct dirent *entry;
     struct stat entry_stat;
@@ -281,42 +282,53 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         goto exit;
     }
 
-    /* Send HTML file header */
-    httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html><body>");
+    // TODO: use this information to determine if we should respond
+    // with HTML or JSON
+    serve_html = detect_if_browser(req);
 
-    /* Get handle to embedded file upload script */
-    /* See EMBED_FILES in CMakeLists.txt */
-    extern const unsigned char upload_script_start[] asm("_binary_api_v1_filesystem_html_start");
-    extern const unsigned char upload_script_end[]   asm("_binary_api_v1_filesystem_html_end");
+    if(serve_html) {
+        /* Send HTML file header */
+        httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html><body>");
 
-    const size_t upload_script_size = (upload_script_end - upload_script_start);
+        /* Get handle to embedded file upload script */
+        /* See EMBED_FILES in CMakeLists.txt */
+        extern const unsigned char upload_script_start[] asm("_binary_api_v1_filesystem_html_start");
+        extern const unsigned char upload_script_end[]   asm("_binary_api_v1_filesystem_html_end");
 
-    /* Add file upload form and script which on execution sends a POST request to /upload */
-    httpd_resp_send_chunk(req, (const char *)upload_script_start, upload_script_size);
+        const size_t upload_script_size = (upload_script_end - upload_script_start);
 
-    /* Send file-list table definition and column labels */
-    httpd_resp_sendstr_chunk(req,
-        "<table class=\"fixed\" border=\"1\">"
-        "<col width=\"800px\" /><col width=\"300px\" /><col width=\"300px\" /><col width=\"100px\" />"
-        "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
-        "<tbody>");
+        /* Add file upload form and script which on execution sends a POST request to /upload */
+        httpd_resp_send_chunk(req, (const char *)upload_script_start, upload_script_size);
 
-    /* Add ".." option at top if we are not at the root of the mount point*/
-    if(strcmp(dirpath, CONFIG_PROJECT_FS_MOUNT_POINT "/")){
-        char *p;
-        char *parent = NULL;
-        parent = strdup(req->uri);
-        if(NULL == parent) goto exit;
-        parent = trim_separators(parent);
-        for(p = parent + strlen(parent) - 2; *p != '/'; p--) ;
-        p[1] = '\0';
-        httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
-        httpd_resp_sendstr_chunk(req, parent);  // link
-        httpd_resp_sendstr_chunk(req, "\">..</a></td><td>");
-        free(parent);
+        /* Send file-list table definition and column labels */
+        httpd_resp_sendstr_chunk(req,
+            "<table class=\"fixed\" border=\"1\">"
+            "<col width=\"800px\" /><col width=\"300px\" /><col width=\"300px\" /><col width=\"100px\" />"
+            "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
+            "<tbody>");
+
+        /* Add ".." option at top if we are not at the root of the mount point*/
+        if(strcmp(dirpath, CONFIG_PROJECT_FS_MOUNT_POINT "/")){
+            char *p;
+            char *parent = NULL;
+            parent = strdup(req->uri);
+            if(NULL == parent) goto exit;
+            parent = trim_separators(parent);
+            for(p = parent + strlen(parent) - 2; *p != '/'; p--) ;
+            p[1] = '\0';
+            httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
+            httpd_resp_sendstr_chunk(req, parent);  // link
+            httpd_resp_sendstr_chunk(req, "\">..</a></td><td>");
+            free(parent);
+        }
+    }
+    else {
+        /* Send JSON Meta */
+        httpd_resp_sendstr_chunk(req, "{\"contents\":[");
     }
 
     /* Iterate over all files / folders and fetch their names and sizes */
+    bool first_iter = true;
     while ((entry = readdir(dir)) != NULL) {
         entrytype = (entry->d_type == DT_DIR ? "directory" : "file");
 
@@ -328,34 +340,59 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         sprintf(entrysize, "%ld", entry_stat.st_size);
         ESP_LOGI(TAG, "Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
 
-        /* Send chunk of HTML file containing table entries with file name and size */
-        httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
-        httpd_resp_sendstr_chunk(req, req->uri);
-        httpd_resp_sendstr_chunk(req, "/");
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        if (entry->d_type == DT_DIR) {
+        if(serve_html) {
+            /* Send chunk of HTML file containing table entries with file name and size */
+            httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
+            httpd_resp_sendstr_chunk(req, req->uri);
             httpd_resp_sendstr_chunk(req, "/");
+            httpd_resp_sendstr_chunk(req, entry->d_name);
+            if (entry->d_type == DT_DIR) {
+                httpd_resp_sendstr_chunk(req, "/");
+            }
+            httpd_resp_sendstr_chunk(req, "\">");
+            httpd_resp_sendstr_chunk(req, entry->d_name);
+            httpd_resp_sendstr_chunk(req, "</a></td><td>");
+            httpd_resp_sendstr_chunk(req, entrytype);
+            httpd_resp_sendstr_chunk(req, "</td><td>");
+            httpd_resp_sendstr_chunk(req, entrysize);
+            httpd_resp_sendstr_chunk(req, "</td><td>");
+            httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"");
+            httpd_resp_sendstr_chunk(req, req->uri);
+            httpd_resp_sendstr_chunk(req, "/");
+            httpd_resp_sendstr_chunk(req, entry->d_name);
+            httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
+            httpd_resp_sendstr_chunk(req, "</td></tr>\n");
         }
-        httpd_resp_sendstr_chunk(req, "\">");
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        httpd_resp_sendstr_chunk(req, "</a></td><td>");
-        httpd_resp_sendstr_chunk(req, entrytype);
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, entrysize);
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"");
-        httpd_resp_sendstr_chunk(req, req->uri);
-        httpd_resp_sendstr_chunk(req, "/");
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
-        httpd_resp_sendstr_chunk(req, "</td></tr>\n");
+        else {
+            if(!first_iter) {
+                httpd_resp_sendstr_chunk(req, ",");
+            }
+            httpd_resp_sendstr_chunk(req, "{\"name\":\"");
+            httpd_resp_sendstr_chunk(req, entry->d_name);
+            httpd_resp_sendstr_chunk(req, "\",\"type\":\"");
+            if (entry->d_type == DT_DIR) {
+                httpd_resp_sendstr_chunk(req, "dir");
+            }
+            else{
+                httpd_resp_sendstr_chunk(req, "file");
+            }
+            httpd_resp_sendstr_chunk(req, "\",\"size\":");
+            httpd_resp_sendstr_chunk(req, entrysize);
+            httpd_resp_sendstr_chunk(req, "}");
+        }
+        first_iter = false;
     }
 
-    /* Finish the file list table */
-    httpd_resp_sendstr_chunk(req, "</tbody></table>");
+    if(serve_html){
+        /* Finish the file list table */
+        httpd_resp_sendstr_chunk(req, "</tbody></table>");
 
-    /* Send remaining chunk of HTML file to complete it */
-    httpd_resp_sendstr_chunk(req, "</body></html>");
+        /* Send remaining chunk of HTML file to complete it */
+        httpd_resp_sendstr_chunk(req, "</body></html>");
+    }
+    else{
+        httpd_resp_sendstr_chunk(req, "]}");
+    }
 
     /* Send empty chunk to signal HTTP response completion */
     httpd_resp_sendstr_chunk(req, NULL);
@@ -518,13 +555,8 @@ esp_err_t filesystem_file_get_handler(httpd_req_t *req)
     FILE *fd = NULL;
     struct stat file_stat;
     char *chunk = ((server_ctx_t *)req->user_ctx)->scratch;
-    bool serve_html;  // currently inactive
 
     char *filepath = get_path_from_uri(req);
-
-    // TODO: use this information to determine if we should respond
-    // with HTML or JSON
-    serve_html = detect_if_browser(req);
 
     if (!filepath) {
         ESP_LOGE(TAG, "Invalid filepath : %s", filepath);
