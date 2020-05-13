@@ -67,3 +67,6 @@ nvs-flash: nvs
 
 nvs-update: env-test
 	curl -X POST ${ESP32_IP}/api/v1/nvs/user --data '{"key1": 7}'
+
+nvs-get: env-test
+	curl ${ESP32_IP}/api/v1/nvs/user

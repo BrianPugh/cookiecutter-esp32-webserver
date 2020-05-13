@@ -427,27 +427,33 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
     extern const unsigned char script_start[] asm("_binary_api_v1_nvs_html_start");
     extern const unsigned char script_end[]   asm("_binary_api_v1_nvs_html_end");
     const size_t script_size = script_end - script_start;
+    bool serve_html = detect_if_browser(req);
 
-    //httpd_resp_send_chunk(req, (const char *)script_start, script_size);
-    
-    /* Send file-list table definition and column labels */
-    httpd_resp_sendstr_chunk(req,
-        "<table class=\"fixed\" border=\"1\">"
-        "<col width=\"400px\" />"
-        "<col width=\"400px\" />"
-        "<col width=\"400px\" />"
-        "<col width=\"400px\" />"
-        "<col width=\"400px\" />"
-        "<thead><tr>"
-        "<th>Namespace</th>"
-        "<th>Key</th>"
-        "<th>Value</th>"
-        "<th>Dtype</th>"
-        "<th>Size (Bytes)</th>"
-        "</thead>"
-        "<tbody>");
+    if( serve_html ){
+        /* Send file-list table definition and column labels */
+        httpd_resp_sendstr_chunk(req,
+            "<table class=\"fixed\" border=\"1\">"
+            "<col width=\"400px\" />"
+            "<col width=\"400px\" />"
+            "<col width=\"400px\" />"
+            "<col width=\"400px\" />"
+            "<col width=\"400px\" />"
+            "<thead><tr>"
+            "<th>Namespace</th>"
+            "<th>Key</th>"
+            "<th>Value</th>"
+            "<th>Dtype</th>"
+            "<th>Size (Bytes)</th>"
+            "</thead>"
+            "<tbody>");
+    }
+    else{
+        /* Send JSON Meta */
+        httpd_resp_sendstr_chunk(req, "{\"contents\":[");
+    }
 
     nvs_iterator_t it = nvs_entry_find(NVS_DEFAULT_PART_NAME, namespace, NVS_TYPE_ANY);
+    bool first_iter = true;
     while (it != NULL) {
         int len;
         char size_buf[16] = {0};
@@ -458,37 +464,58 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
 
         ESP_LOGD(TAG, "key '%s', type '%d'", info.key, info.type);
 
-        httpd_resp_sendstr_chunk(req, "<tr><td>");
-        httpd_resp_sendstr_chunk(req, info.namespace_name);
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, info.key);
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-
-        /* Value */
         len = nvs_as_str(value_buf, sizeof(value_buf), info.namespace_name, info.key, info.type);
         if(len < 0) {
             // TODO: error handling
             ESP_LOGE(TAG, "Unhandled error");
         }
-        httpd_resp_sendstr_chunk(req, value_buf);
-
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));
-        httpd_resp_sendstr_chunk(req, "</td><td>");
         itoa(len, size_buf, 10);
-        httpd_resp_sendstr_chunk(req, size_buf);
-        httpd_resp_sendstr_chunk(req, "</td></tr>\n");
+
+        if(serve_html) {
+            httpd_resp_sendstr_chunk(req, "<tr><td>");
+            httpd_resp_sendstr_chunk(req, info.namespace_name);
+            httpd_resp_sendstr_chunk(req, "</td><td>");
+            httpd_resp_sendstr_chunk(req, info.key);
+            httpd_resp_sendstr_chunk(req, "</td><td>");
+            httpd_resp_sendstr_chunk(req, value_buf);
+            httpd_resp_sendstr_chunk(req, "</td><td>");
+            httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));
+            httpd_resp_sendstr_chunk(req, "</td><td>");
+            httpd_resp_sendstr_chunk(req, size_buf);
+            httpd_resp_sendstr_chunk(req, "</td></tr>\n");
+        }
+        else {
+            if(!first_iter) {
+                httpd_resp_sendstr_chunk(req, ",");
+            }
+            httpd_resp_sendstr_chunk(req, "{\"namespace\":\"");
+            httpd_resp_sendstr_chunk(req, info.namespace_name);
+            httpd_resp_sendstr_chunk(req, "\",\"key\":\"");
+            httpd_resp_sendstr_chunk(req, info.key);
+            httpd_resp_sendstr_chunk(req, "\",\"value\":\"");
+            httpd_resp_sendstr_chunk(req, value_buf);
+            httpd_resp_sendstr_chunk(req, "\",\"dtype\":\"");
+            httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));
+            httpd_resp_sendstr_chunk(req, "\",\"size\":");
+            httpd_resp_sendstr_chunk(req, size_buf);
+            httpd_resp_sendstr_chunk(req, "}");
+        }
+        first_iter = false;
     }
 
-    /* Finish the file list table */
-    httpd_resp_sendstr_chunk(req, "</tbody></table>");
+    if(serve_html){
+        /* Finish the file list table */
+        httpd_resp_sendstr_chunk(req, "</tbody></table>");
 
-    /* Send remaining chunk of HTML file to complete it */
-    httpd_resp_sendstr_chunk(req, "</body></html>");
+        /* Send remaining chunk of HTML file to complete it */
+        httpd_resp_sendstr_chunk(req, "</body></html>");
+    }
+    else{
+        httpd_resp_sendstr_chunk(req, "]}");
+    }
 
     /* Send empty chunk to signal HTTP response completion */
     httpd_resp_sendstr_chunk(req, NULL);
-
 
     err = ESP_OK;
 
