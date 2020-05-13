@@ -71,9 +71,6 @@ esp_err_t parse_post_request(cJSON **json, httpd_req_t *req)
     return ESP_OK;
 }
 
-/**
- * @returns true if browser, false otherwise.
- */
 bool detect_if_browser(httpd_req_t *req)
 {
     char buf[10] = {0};
