@@ -110,15 +110,8 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         /* Send HTML file header */
         httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html><body>");
 
-        /* Get handle to embedded file upload script */
-        /* See EMBED_FILES in CMakeLists.txt */
-        extern const unsigned char upload_script_start[] asm("_binary_api_v1_filesystem_html_start");
-        extern const unsigned char upload_script_end[]   asm("_binary_api_v1_filesystem_html_end");
-
-        const size_t upload_script_size = (upload_script_end - upload_script_start);
-
         /* Add file upload form and script which on execution sends a POST request to /upload */
-        httpd_resp_send_chunk(req, (const char *)upload_script_start, upload_script_size);
+        HTTP_SEND_BINARY(req, "api_v1_filesystem_html");
 
         /* Send file-list table definition and column labels */
         httpd_resp_sendstr_chunk(req,

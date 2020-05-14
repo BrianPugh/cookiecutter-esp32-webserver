@@ -424,13 +424,12 @@ exit:
 static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespace)
 {
     esp_err_t err = ESP_FAIL;
-    extern const unsigned char script_start[] asm("_binary_api_v1_nvs_html_start");
-    extern const unsigned char script_end[]   asm("_binary_api_v1_nvs_html_end");
-    const size_t script_size = script_end - script_start;
     bool serve_html = detect_if_browser(req);
 
     if( serve_html ){
+        /* Send over jquery */
         /* Send file-list table definition and column labels */
+        HTTP_SEND_JS(req, "jquery");
         httpd_resp_sendstr_chunk(req,
             "<table class=\"fixed\" border=\"1\">"
             "<col width=\"400px\" />"
@@ -476,7 +475,7 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
             httpd_resp_sendstr_chunk(req, info.namespace_name);
             httpd_resp_sendstr_chunk(req, "</td><td>");
             httpd_resp_sendstr_chunk(req, info.key);
-            httpd_resp_sendstr_chunk(req, "</td><td>");
+            httpd_resp_sendstr_chunk(req, "</td><td contenteditable=\"true\">");
             httpd_resp_sendstr_chunk(req, value_buf);
             httpd_resp_sendstr_chunk(req, "</td><td>");
             httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));

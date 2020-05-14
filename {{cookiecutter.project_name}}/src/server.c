@@ -70,3 +70,5 @@ esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*
     return httpd_register_uri_handler(server, &desc);
 }
 
+
+
