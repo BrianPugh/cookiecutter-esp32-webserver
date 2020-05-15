@@ -474,9 +474,9 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
             httpd_resp_sendstr_chunk(req, info.namespace_name);
             httpd_resp_sendstr_chunk(req, "</td><td>");
             httpd_resp_sendstr_chunk(req, info.key);
-            httpd_resp_sendstr_chunk(req, "</td><td contenteditable=\"true\">");
+            httpd_resp_sendstr_chunk(req, "</td><td><input type='text'>");
             httpd_resp_sendstr_chunk(req, value_buf);
-            httpd_resp_sendstr_chunk(req, "</td><td>");
+            httpd_resp_sendstr_chunk(req, "</input></td><td>");
             httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));
             httpd_resp_sendstr_chunk(req, "</td><td>");
             httpd_resp_sendstr_chunk(req, size_buf);
