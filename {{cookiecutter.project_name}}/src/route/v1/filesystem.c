@@ -111,7 +111,7 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html><body>");
 
         /* Add file upload form and script which on execution sends a POST request to /upload */
-        HTTP_SEND_BINARY(req, "api_v1_filesystem_html");
+        HTTP_SEND_BINARY(req, api_v1_filesystem_html);
 
         /* Send file-list table definition and column labels */
         httpd_resp_sendstr_chunk(req,

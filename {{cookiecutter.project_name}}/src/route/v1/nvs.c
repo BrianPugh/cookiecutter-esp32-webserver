@@ -429,9 +429,8 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
     if( serve_html ){
         /* Send over jquery */
         /* Send file-list table definition and column labels */
-        HTTP_SEND_JS(req, "jquery");
         httpd_resp_sendstr_chunk(req,
-            "<table class=\"fixed\" border=\"1\">"
+            "<table id=\"nvs\" class=\"fixed\" border=\"1\">"
             "<col width=\"400px\" />"
             "<col width=\"400px\" />"
             "<col width=\"400px\" />"
@@ -506,15 +505,22 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
         /* Finish the file list table */
         httpd_resp_sendstr_chunk(req, "</tbody></table>");
 
+        HTTP_SEND_JS(req, api_v1_nvs);
+
         /* Send remaining chunk of HTML file to complete it */
-        httpd_resp_sendstr_chunk(req, "</body></html>");
+        httpd_resp_sendstr_chunk(req, "</body>");
+
+        httpd_resp_sendstr_chunk(req, "</html>");
+
+        /* Redirect onto root to see the updated file list */
+        httpd_resp_set_status(req, "303 See Other");
+        httpd_resp_set_hdr(req, "Location", req->uri);
     }
     else{
         httpd_resp_sendstr_chunk(req, "]}");
+        /* Send empty chunk to signal HTTP response completion */
+        httpd_resp_sendstr_chunk(req, NULL);
     }
-
-    /* Send empty chunk to signal HTTP response completion */
-    httpd_resp_sendstr_chunk(req, NULL);
 
     err = ESP_OK;
 

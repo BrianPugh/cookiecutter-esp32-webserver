@@ -36,18 +36,20 @@ bool detect_if_browser(httpd_req_t *req);
 
 
 /**
- * Send the contents of the file that was stored as binary/text data
+ * Send the contents of the file that was stored as binary/text data.
+ * Don't put file in quotes.
  */
-#define HTTP_SEND_BINARY(req, name) do {                                        \
-    extern const unsigned char script_start[] asm("_binary_" name "_start");       \
-    extern const unsigned char script_end[]   asm("_binary_" name "_end");         \
-    const size_t script_size = (script_end - script_start);                     \
-    httpd_resp_send_chunk(req, (const char *)script_start, script_size);        \
+#define HTTP_SEND_BINARY(req, name) do {                                                         \
+    extern const unsigned char _route_script_##name##_start[] asm("_binary_" #name "_start");    \
+    extern const unsigned char _route_script_##name##_end[]   asm("_binary_" #name "_end");      \
+    const size_t script_size = (_route_script_##name##_end - _route_script_##name##_start);      \
+    httpd_resp_send_chunk(req, (const char *)_route_script_##name##_start, script_size);         \
 }while(0)
 
 
 /**
  * @brief Send some binary data wrapped in script brackets.
+ * Don't put file in quotes.
  */
 #define HTTP_SEND_SCRIPT(req, name) do{                                         \
     httpd_resp_sendstr_chunk(req, "<script>");                                  \
@@ -55,9 +57,12 @@ bool detect_if_browser(httpd_req_t *req);
     httpd_resp_sendstr_chunk(req, "</script>");                                 \
 }while(0)
 
-
+/**
+ * @brief Send some stored javacript.
+ * Don't put file in quotes.
+ */
 #define HTTP_SEND_JS(req, name) do{                                             \
-    HTTP_SEND_SCRIPT(req, name "_js" );                                         \
+    HTTP_SEND_SCRIPT(req, name ## _js );                                         \
 }while(0)
 
 #endif
