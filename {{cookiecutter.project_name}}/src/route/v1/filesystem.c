@@ -65,7 +65,6 @@ static char *get_path_from_uri(const httpd_req_t *req) {
         *p = '\0';
     }
 
-    //TODO pickup here
     ESP_LOGI(TAG, "Parsed Path: %s", parsed);
 
 exit:
@@ -102,8 +101,6 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         goto exit;
     }
 
-    // TODO: use this information to determine if we should respond
-    // with HTML or JSON
     serve_html = detect_if_browser(req);
 
     if(serve_html) {
@@ -117,8 +114,12 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         httpd_resp_sendstr_chunk(req,
             "<table class=\"fixed\" border=\"1\">"
             "<col width=\"800px\" /><col width=\"300px\" /><col width=\"300px\" /><col width=\"100px\" />"
-            "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
-            "<tbody>");
+            "<thead><tr>"
+            "<th>Name</th>"
+            "<th>Type</th>"
+            "<th>Size (Bytes)</th>"
+            "<th>Delete</th>"
+            "</tr></thead><tbody>");
 
         /* Add ".." option at top if we are not at the root of the mount point*/
         if(strcmp(dirpath, CONFIG_PROJECT_FS_MOUNT_POINT "/")){
@@ -488,6 +489,5 @@ exit:
         free(filepath);
     }
     return err;
-
 }
 

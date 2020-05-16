@@ -36,7 +36,6 @@ esp_err_t ota_post_handler(httpd_req_t *req)
         }
         err = esp_ota_write(ota_handle, buf, recv_len);
         if( ESP_OK != err ) {
-            // TODO
             ESP_LOGE(TAG, "Failed to write OTA chunk to partition. Aborting...");
             goto exit;
         }
