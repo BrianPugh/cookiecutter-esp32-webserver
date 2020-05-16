@@ -598,9 +598,32 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
             ESP_LOGI(TAG, "Saved string \"%s\" to %s/%s", item->valuestring, namespace, key);
         }
         else if(info.type == NVS_TYPE_BLOB) {
-            // TODO
-            // Cannot handle Blob types for now.
-            // Maybe expect input to be hex encoded and convert.
+            if(! cJSON_IsString(item)) {
+                ESP_LOGE(TAG, "Value for key \"%s\" must be a hex string", key);
+                err = ESP_FAIL;
+                goto exit;
+            }
+
+            size_t bin_actual_len;
+            size_t bin_buf_len = strlen(item->valuestring) / 2;
+            uint8_t *bin;
+            if(NULL == (bin = malloc(bin_buf_len))) {
+                ESP_LOGE(TAG, "OOM");
+                goto exit;
+            }
+
+            int res;
+            res = sodium_hex2bin(bin, bin_buf_len, 
+                    item->valuestring, strlen(item->valuestring),
+                    NULL, &bin_actual_len, NULL);
+            if(res != 0) {
+                ESP_LOGE(TAG, "Failed to convert hexstring to bin");
+                free(bin);
+                goto exit;
+            }
+            err = nvs_set_blob(h, key, bin, bin_actual_len);
+            ESP_LOGI(TAG, "Saved blob \"%s\" to %s/%s", item->valuestring, namespace, key);
+            free(bin);
             goto exit;
         }
         else {
