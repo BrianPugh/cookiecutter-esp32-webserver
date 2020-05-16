@@ -104,8 +104,11 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
     serve_html = detect_if_browser(req);
 
     if(serve_html) {
-        /* Send HTML file header */
-        httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html><body>");
+        HTTP_SEND_DOCTYPE_HTML(req);
+
+        HTTP_SEND_COMMON_HEAD(req, "{{cookiecutter.project_name}} File Server");
+
+        httpd_resp_sendstr_chunk(req, "<body>");
 
         /* Add file upload form and script which on execution sends a POST request to /upload */
         HTTP_SEND_BINARY(req, api_v1_filesystem_html);

@@ -444,6 +444,12 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
     bool serve_html = detect_if_browser(req);
 
     if( serve_html ){
+        HTTP_SEND_DOCTYPE_HTML(req);
+
+        HTTP_SEND_COMMON_HEAD(req, "{{cookiecutter.project_name}} NVS");
+
+        httpd_resp_sendstr_chunk(req, "<body>");
+
         /* Send file-list table definition and column labels */
         httpd_resp_sendstr_chunk(req,
             "<table id=\"nvs\" class=\"fixed\" border=\"1\">"

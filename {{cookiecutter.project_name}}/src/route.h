@@ -62,7 +62,47 @@ bool detect_if_browser(httpd_req_t *req);
  * Don't put file in quotes.
  */
 #define HTTP_SEND_JS(req, name) do{                                             \
-    HTTP_SEND_SCRIPT(req, name ## _js );                                         \
+    HTTP_SEND_SCRIPT(req, name ## _js );                                        \
 }while(0)
+
+#define HTTP_SEND_CSS(req, name) do{                                            \
+    httpd_resp_sendstr_chunk(req, "<style>");                                   \
+    HTTP_SEND_SCRIPT(req, name ## _css );                                       \
+    httpd_resp_sendstr_chunk(req, "</style>");                                  \
+}while(0)
+
+
+static inline void HTTP_SEND_FAVICON(httpd_req_t *req) {
+    httpd_resp_sendstr_chunk(req, "<link rel=\"icon\" href=\"/favicon.ico\">"); \
+}
+
+
+/**
+ * @brief Send a common header with a title.
+ *
+ * Sends:
+ *     1. title
+ *     2. common css
+ *     3. favicon
+ *
+ * @param[in] req
+ * @param[in] title May be NULL.
+ */
+static inline void HTTP_SEND_COMMON_HEAD(httpd_req_t *req, char *title) {
+    httpd_resp_sendstr_chunk(req, "<head>");
+    if(title) {
+        httpd_resp_sendstr_chunk(req, "<title>");
+        httpd_resp_sendstr_chunk(req, title);
+        httpd_resp_sendstr_chunk(req, "</title>");
+    }
+    HTTP_SEND_CSS(req, common);
+    HTTP_SEND_FAVICON(req);
+    httpd_resp_sendstr_chunk(req, "</head>");
+}
+
+
+static inline void HTTP_SEND_DOCTYPE_HTML(httpd_req_t *req) {
+    httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html>");
+}
 
 #endif

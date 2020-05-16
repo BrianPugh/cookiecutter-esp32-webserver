@@ -17,9 +17,24 @@ __unused static const char TAG[] = "route";
     } while(0)
 
 
+/* Handler to respond with an icon file embedded in flash.
+ * Browsers expect to GET website icon at URI /favicon.ico.
+ * This can be overridden by uploading file with same name */
+static esp_err_t favicon_get_handler(httpd_req_t *req)
+{
+    extern const unsigned char _route_favicon_ico_start[] asm("_binary_favicon_ico_start");
+    extern const unsigned char _route_favicon_ico_end[]   asm("_binary_favicon_ico_end");
+    const size_t favicon_ico_size = (_route_favicon_ico_end - _route_favicon_ico_start);
+    httpd_resp_set_type(req, "image/x-icon");
+    httpd_resp_send(req, (const char *)_route_favicon_ico_start, favicon_ico_size);
+    return ESP_OK;
+}
+
 esp_err_t register_routes() {
 	/* Add all routes HERE */
     esp_err_t err = ESP_OK;
+
+    ERR_CHECK(server_register("/favicon.ico", HTTP_GET, favicon_get_handler));
 
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_FILESYSTEM "/*", HTTP_DELETE, filesystem_file_delete_handler));
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_FILESYSTEM "/*", HTTP_GET, filesystem_file_get_handler));
