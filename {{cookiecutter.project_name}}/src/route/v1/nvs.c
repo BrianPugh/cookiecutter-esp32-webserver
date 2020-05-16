@@ -655,8 +655,9 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
             }
             else if(cJSON_IsString(item)) {
                 errno = 0;
-                val = strtod(item->valuestring, NULL);
-                if(errno != 0) {
+                char *endptr;
+                val = strtod(item->valuestring, &endptr);
+                if(errno != 0 || endptr == item->valuestring) {
                     ESP_LOGE(TAG, "Could not convert value to double");
                     goto exit;
                 }
