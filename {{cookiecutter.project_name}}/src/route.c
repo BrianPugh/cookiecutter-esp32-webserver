@@ -30,10 +30,31 @@ static esp_err_t favicon_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+
+/**
+ * @Brief Manual sitemap
+ */
+static esp_err_t root_get_handler(httpd_req_t *req) {
+    HTTP_SEND_DOCTYPE_HTML(req);
+    HTTP_SEND_COMMON_HEAD(req, "{{cookiecutter.project_name}} NVS");
+    httpd_resp_sendstr_chunk(req, "<body>");
+
+    httpd_resp_sendstr_chunk(req, "<h1>Admin</h1>");
+    httpd_resp_sendstr_chunk(req, "<p><a href=\"" PROJECT_ROUTE_V1_FILESYSTEM "\">Filesystem</a></p>");
+    httpd_resp_sendstr_chunk(req, "<p><a href=\"" PROJECT_ROUTE_V1_NVS "\">Non-Volatile Storage</a></p>");
+
+    httpd_resp_sendstr_chunk(req, "</body>");
+    httpd_resp_sendstr_chunk(req, NULL);
+
+    return ESP_OK;
+}
+
+
 esp_err_t register_routes() {
 	/* Add all routes HERE */
     esp_err_t err = ESP_OK;
 
+    ERR_CHECK(server_register("/", HTTP_GET, root_get_handler));
     ERR_CHECK(server_register("/favicon.ico", HTTP_GET, favicon_get_handler));
 
     ERR_CHECK(server_register(PROJECT_ROUTE_V1_FILESYSTEM "/*", HTTP_DELETE, filesystem_file_delete_handler));
