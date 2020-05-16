@@ -481,8 +481,8 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
 
         len = nvs_as_str(value_buf, sizeof(value_buf), info.namespace_name, info.key, info.type);
         if(len < 0) {
-            // TODO: error handling
             ESP_LOGE(TAG, "Unhandled error");
+            continue;
         }
         itoa(len, size_buf, 10);
 
@@ -548,11 +548,11 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
 esp_err_t nvs_post_handler(httpd_req_t *req)
 {
     esp_err_t err = ESP_FAIL;
-    char namespace[NAMESPACE_MAX] = {0};
-    cJSON *root = NULL;
-    nvs_handle_t h = 0;
     uint8_t res;
+    char namespace[NAMESPACE_MAX] = {0};
+    nvs_handle_t h = 0;
     nvs_iterator_t it;
+    cJSON *root = NULL;
     cJSON *elem;
 
     res = get_namespace_key_from_uri(namespace, NULL, req);
@@ -561,7 +561,6 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
         goto exit;
     }
     if(res & PARSE_KEY) {
-        // Shouldn't supply this value
         ESP_LOGE(TAG, "Don't supply key in URI");
         goto exit;
     }
@@ -570,9 +569,7 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
         goto exit;
     }
 
-    if(ESP_OK != parse_post_request(&root, req)) {
-        goto exit;
-    }
+    if(ESP_OK != parse_post_request(&root, req)) goto exit;
 
     /* Open the namespace */
     err = nvs_open(namespace, NVS_READWRITE, &h);
@@ -610,8 +607,9 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
                 err = ESP_FAIL;
                 goto exit;
             }
-            err = nvs_set_str(h, key, item->valuestring);
-            ESP_LOGI(TAG, "Saved string \"%s\" to %s/%s", item->valuestring, namespace, key);
+            if(ESP_OK == (err = nvs_set_str(h, key, item->valuestring))){
+                ESP_LOGI(TAG, "Saved string \"%s\" to %s/%s", item->valuestring, namespace, key);
+            }
         }
         else if(info.type == NVS_TYPE_BLOB) {
             if(! cJSON_IsString(item)) {
@@ -637,10 +635,10 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
                 free(bin);
                 goto exit;
             }
-            err = nvs_set_blob(h, key, bin, bin_actual_len);
-            ESP_LOGI(TAG, "Saved blob \"%s\" to %s/%s", item->valuestring, namespace, key);
+            if( ESP_OK == (err = nvs_set_blob(h, key, bin, bin_actual_len))) {
+                ESP_LOGI(TAG, "Saved blob \"%s\" to %s/%s", item->valuestring, namespace, key);
+            }
             free(bin);
-            goto exit;
         }
         else {
             double val;
@@ -662,8 +660,9 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
                 ESP_LOGI(TAG, "Unhandled datatype");
                 goto exit;
             }
-            err = nvs_type_set_number(h, info.type, key, val);
-            ESP_LOGI(TAG, "Saved number %lf to %s/%s", val, namespace, key);
+            if( ESP_OK == (err = nvs_type_set_number(h, info.type, key, val))) {
+                ESP_LOGI(TAG, "Saved number %lf to %s/%s", val, namespace, key);
+            }
         }
 
         if(ESP_OK != err) goto exit;
@@ -672,10 +671,10 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
     err = ESP_OK;
     
 exit:
+    httpd_resp_send_chunk(req, NULL, 0);
     if(root) cJSON_Delete(root);
     if( h ) nvs_close(h);
     nvs_release_iterator(it);
-    httpd_resp_send_chunk(req, NULL, 0);
     if(ESP_OK != err) ESP_LOGE(TAG, "nvs post failed");
     return err;
 }
