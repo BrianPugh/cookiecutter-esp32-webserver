@@ -18,6 +18,8 @@ menu "{{cookiecutter.project_name}} Configuration"
         help
             Specify the domain name used in the mDNS service.
             Note that webpage also take it as a part of URL where it will send GET/POST requests to.
+            For example, to access the filesystem interface, you could visit:
+                http://esp-webserver.local/api/v1/filesystem
 
     choice PROJECT_DEPLOY_MODE
         prompt "Website deploy mode"
