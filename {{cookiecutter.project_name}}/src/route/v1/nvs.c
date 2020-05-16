@@ -621,6 +621,7 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
         if(info.type == NVS_TYPE_STR) {
             if(! cJSON_IsString(item)) {
                 ESP_LOGE(TAG, "Value for key \"%s\" must be a string", key);
+                httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Must provide a string");
                 err = ESP_FAIL;
                 goto exit;
             }
@@ -631,6 +632,7 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
         else if(info.type == NVS_TYPE_BLOB) {
             if(! cJSON_IsString(item)) {
                 ESP_LOGE(TAG, "Value for key \"%s\" must be a hex string", key);
+                httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Must provide a valid hex string");
                 err = ESP_FAIL;
                 goto exit;
             }
@@ -650,6 +652,8 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
             if(res != 0) {
                 ESP_LOGE(TAG, "Failed to convert hexstring to bin");
                 free(bin);
+                httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to convert hexstring to bin");
+                err = ESP_FAIL;
                 goto exit;
             }
             if( ESP_OK == (err = nvs_set_blob(h, key, bin, bin_actual_len))) {
@@ -659,25 +663,26 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
         }
         else {
             double val;
-            if(cJSON_IsNumber(item)) {
-                val = item->valuedouble;
-                ESP_LOGE(TAG, "Value for key \"%s\" must be a number", key);
-                err = ESP_FAIL;
-                goto exit;
-            }
-            else if(cJSON_IsString(item)) {
+            if(cJSON_IsString(item)) {
                 errno = 0;
                 char *endptr;
                 val = strtod(item->valuestring, &endptr);
                 if(errno != 0 || endptr == item->valuestring) {
-                    ESP_LOGE(TAG, "Could not convert value to double");
+                    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Non-numeric entry for a numeric datatype");
+                    ESP_LOGE(TAG, "Non-numeric entry for a numeric datatype");
+                    err = ESP_FAIL;
                     goto exit;
                 }
             }
+            else if(cJSON_IsNumber(item)) {
+                val = item->valuedouble;
+            }
             else {
-                ESP_LOGI(TAG, "Unhandled datatype");
+                httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid input");
+                err = ESP_FAIL;
                 goto exit;
             }
+
             if( ESP_OK == (err = nvs_type_set_number(h, info.type, key, val))) {
                 ESP_LOGI(TAG, "Saved number %lf to %s/%s", val, namespace, key);
             }
@@ -693,7 +698,9 @@ exit:
     if(root) cJSON_Delete(root);
     if( h ) nvs_close(h);
     nvs_release_iterator(it);
-    if(ESP_OK != err) ESP_LOGE(TAG, "nvs post failed");
+    if(ESP_OK != err) {
+        ESP_LOGE(TAG, "nvs post failed");
+    }
     return err;
 }
 

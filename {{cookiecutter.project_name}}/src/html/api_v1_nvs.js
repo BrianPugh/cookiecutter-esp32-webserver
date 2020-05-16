@@ -6,6 +6,10 @@ document.querySelectorAll('#nvs input').forEach((input) => {
                       'Content-Type': 'application/json'
             },
             body: JSON.stringify({[event.target.name]: event.target.value}),
+        }).then(function(response) {
+            if(response.status != 200) {
+                alert("Invalid Entry")
+            }
         });
     })
 })
