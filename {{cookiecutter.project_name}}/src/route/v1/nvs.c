@@ -2,6 +2,7 @@
 #include "nvs_flash.h"
 #include "route/v1/nvs.h"
 #include "sodium.h"
+#include "errno.h"
 #include <sys/param.h>
 
 // Including NULL-terminator
@@ -603,13 +604,27 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
             goto exit;
         }
         else {
-            if(! cJSON_IsNumber(item)) {
+            double val;
+            if(cJSON_IsNumber(item)) {
+                val = item->valuedouble;
                 ESP_LOGE(TAG, "Value for key \"%s\" must be a number", key);
                 err = ESP_FAIL;
                 goto exit;
             }
-            err = nvs_type_set_number(h, info.type, key, item->valuedouble);
-            ESP_LOGI(TAG, "Saved number %lf to %s/%s", item->valuedouble, namespace, key);
+            else if(cJSON_IsString(item)) {
+                errno = 0;
+                val = strtod(item->valuestring, NULL);
+                if(errno != 0) {
+                    ESP_LOGE(TAG, "Could not convert value to double");
+                    goto exit;
+                }
+            }
+            else {
+                ESP_LOGI(TAG, "Unhandled datatype");
+                goto exit;
+            }
+            err = nvs_type_set_number(h, info.type, key, val);
+            ESP_LOGI(TAG, "Saved number %lf to %s/%s", val, namespace, key);
         }
 
         if(ESP_OK != err) goto exit;
