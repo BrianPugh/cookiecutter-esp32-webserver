@@ -277,7 +277,7 @@ exit:
 static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *namespace, const char *key) {
     esp_err_t err = ESP_FAIL;
     nvs_entry_info_t info;
-    const char *msg = NULL;
+    char *msg = NULL;
     cJSON *root = NULL;
     nvs_handle_t h = 0;
 

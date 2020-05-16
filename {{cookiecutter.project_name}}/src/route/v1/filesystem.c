@@ -19,7 +19,7 @@ __unused static const char TAG[] = "route/v1/filesystem";
 static char *get_path_from_uri(const httpd_req_t *req) {
     // Where the filesystem is mounted; e.g. "/fs"
 	const char *base_path = ((server_ctx_t *)req->user_ctx)->base_path;
-    const char *uri = trim_separators(req->uri);
+    const char *uri = req->uri;
     char *parsed = NULL;
 
     size_t pathlen = strlen(uri);
