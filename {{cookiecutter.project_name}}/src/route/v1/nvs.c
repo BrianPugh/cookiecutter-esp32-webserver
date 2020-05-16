@@ -493,7 +493,19 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
 
         if(serve_html) {
             httpd_resp_sendstr_chunk(req, "<tr><td>");
-            httpd_resp_sendstr_chunk(req, info.namespace_name);
+            if(namespace == NULL){
+                /* Hyperlink the namespace */
+                httpd_resp_sendstr_chunk(req, "<a href=\"");
+                httpd_resp_sendstr_chunk(req, req->uri);
+                httpd_resp_sendstr_chunk(req, "/");
+                httpd_resp_sendstr_chunk(req, info.namespace_name);
+                httpd_resp_sendstr_chunk(req, "\">");
+                httpd_resp_sendstr_chunk(req, info.namespace_name);
+                httpd_resp_sendstr_chunk(req, "</a>");
+            }
+            else{
+                httpd_resp_sendstr_chunk(req, info.namespace_name);
+            }
             httpd_resp_sendstr_chunk(req, "</td><td>");
             httpd_resp_sendstr_chunk(req, info.key);
             httpd_resp_sendstr_chunk(req, "</td><td><input type='text' name='");
