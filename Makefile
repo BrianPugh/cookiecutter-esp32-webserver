@@ -70,3 +70,6 @@ nvs-update: env-test
 
 nvs-get: env-test
 	curl ${ESP32_IP}/api/v1/nvs/user
+
+nvs-get-bin: env-test
+	curl ${ESP32_IP}/api/v1/nvs/user/key3

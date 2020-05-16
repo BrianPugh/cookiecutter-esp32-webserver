@@ -270,9 +270,12 @@ exit:
     return outlen;
 }
 
+
+/**
+ * @brief GET handler that responds with json data for a namespace/key
+ */
 static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *namespace, const char *key) {
     esp_err_t err = ESP_FAIL;
-    // Find the key within the namespace
     nvs_entry_info_t info;
     const char *msg = NULL;
     cJSON *root = NULL;
@@ -293,12 +296,11 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
     }
 
     root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "namespace", namespace);
-    cJSON_AddStringToObject(root, "key", key);
-    cJSON_AddStringToObject(root, "dtype", nvs_type_to_str(info.type));
+    CJSON_CHECK(cJSON_AddStringToObject(root, "namespace", namespace));
+    CJSON_CHECK(cJSON_AddStringToObject(root, "key", key));
+    CJSON_CHECK(cJSON_AddStringToObject(root, "dtype", nvs_type_to_str(info.type)));
 
-    err = nvs_open(namespace, NVS_READONLY, &h);
-    if(ESP_OK != err) {
+    if(ESP_OK != (err = nvs_open(namespace, NVS_READONLY, &h))) {
         ESP_LOGE(TAG, "Couldn't open namespace %s", namespace);
         goto exit;
     }
@@ -307,82 +309,70 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
     switch(info.type) {
         case NVS_TYPE_U8:{
             uint8_t val;
-            err = nvs_get_u8(h, key, &val);
-            if(ESP_OK != err) goto exit;
+            if(ESP_OK != (err = nvs_get_u8(h, key, &val))) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 1;
             break;
         }
         case NVS_TYPE_I8: {
             int8_t val;
-            err = nvs_get_i8(h, key, &val);
-            if(ESP_OK != err) goto exit;
+            if(ESP_OK != (err = nvs_get_i8(h, key, &val))) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 1;
             break;
         }
         case NVS_TYPE_U16: {
             uint16_t val;
-            err = nvs_get_u16(h, key, &val);
-            if(ESP_OK != err) goto exit;
+            if(ESP_OK != (err = nvs_get_u16(h, key, &val))) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 2;
             break;
         }
         case NVS_TYPE_I16: {
             int16_t val;
-            err = nvs_get_i16(h, key, &val);
-            if(ESP_OK != err) goto exit;
+            if(ESP_OK != (err = nvs_get_i16(h, key, &val))) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 2;
             break;
         }
         case NVS_TYPE_U32: {
             uint32_t val;
-            err = nvs_get_u32(h, key, &val);
-            if(ESP_OK != err) goto exit;
+            if(ESP_OK != (err = nvs_get_u32(h, key, &val))) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 4;
             break;
         }
         case NVS_TYPE_I32: {
             int32_t val;
-            err = nvs_get_i32(h, key, &val);
-            if(ESP_OK != err) goto exit;
+            if(ESP_OK != (err = nvs_get_i32(h, key, &val))) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 4;
             break;
         }
         case NVS_TYPE_U64: {
             uint64_t val;
-            err = nvs_get_u64(h, key, &val);
-            if(ESP_OK != err) goto exit;
+            if(ESP_OK != (err = nvs_get_u64(h, key, &val))) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 8;
             break;
         }
         case NVS_TYPE_I64: {
             int64_t val;
-            err = nvs_get_i64(h, key, &val);
-            if(ESP_OK != err) goto exit;
+            if(ESP_OK != (err = nvs_get_i64(h, key, &val))) goto exit;
             CJSON_CHECK(cJSON_AddNumberToObject(root, "value", val));
             dsize = 8;
             break;
         }
         case NVS_TYPE_STR: {
+            cJSON *obj;
             char *val;
-            err = nvs_get_str(h, key, NULL, &dsize);
-            if(ESP_OK != err) goto exit;
-            val = malloc(dsize);
-            if(NULL == val) {
+            if(ESP_OK != (err = nvs_get_str(h, key, NULL, &dsize))) goto exit;
+            if(NULL == (val = malloc(dsize))) {
                 ESP_LOGE(TAG, "OOM");
                 err = ESP_FAIL;
                 goto exit;
             }
-            err = nvs_get_str(h, key, val, &dsize);
-            if(ESP_OK != err) goto exit;
-
-            cJSON *obj;
+            if(ESP_OK != (err = nvs_get_str(h, key, val, &dsize))) goto exit;
             obj = cJSON_AddStringToObject(root, "value", val);
             free(val);
             if(NULL == obj) {
@@ -392,10 +382,34 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
             break;
         }
         case NVS_TYPE_BLOB: {
+            cJSON *obj;
+            char *hex;
             uint8_t *val;
-            err = nvs_get_blob(h, key, NULL, &dsize);
-            if(ESP_OK != err) goto exit;
-            // TODO: parse and convert value
+            if(ESP_OK != (err = nvs_get_blob(h, key, NULL, &dsize))) goto exit;
+            if(NULL == (val = malloc(dsize))) {
+                ESP_LOGE(TAG, "OOM");
+                err = ESP_FAIL;
+                goto exit;
+            }
+            if(ESP_OK != (err = nvs_get_blob(h, key, val, &dsize))) goto exit;
+
+            size_t hex_len = dsize * 2 + 1;
+            if(NULL == (hex = malloc(hex_len))) {
+                ESP_LOGE(TAG, "OOM");
+                err = ESP_FAIL;
+                free(val);
+                goto exit;
+            }
+
+            sodium_bin2hex(hex, hex_len, val, dsize);
+            obj = cJSON_AddStringToObject(root, "value", hex);
+
+            free(val);
+            free(hex);
+            if(NULL == obj) {
+                err = ESP_FAIL;
+                goto exit;
+            }
             break;
         }
         default:
@@ -406,8 +420,10 @@ static esp_err_t nvs_namespace_key_get_handler(httpd_req_t *req, const char *nam
     cJSON_AddNumberToObject(root, "size", dsize);
 
     msg = cJSON_Print(root);
-    httpd_resp_sendstr(req, msg);
-    err = ESP_OK;
+    if(msg) {
+        httpd_resp_sendstr(req, msg);
+        err = ESP_OK;
+    }
 
 exit:
     if( msg ) free(msg);
