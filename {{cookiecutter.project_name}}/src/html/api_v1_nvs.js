@@ -1,8 +1,11 @@
 document.querySelectorAll('#nvs input').forEach((input) => {
-    input.addEventListener('blur', (event) => {
-        fetch('/api/v1/nvs/', {
+    input.addEventListener('focusout', (event) => {
+        fetch('/api/v1/nvs/' + event.target.dataset.namespace, {
             method: 'POST',
-            body: JSON.stringify(event.target.value),
+            headers: {
+                      'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({[event.target.name]: event.target.value}),
         });
     })
 })

@@ -474,7 +474,11 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
             httpd_resp_sendstr_chunk(req, info.namespace_name);
             httpd_resp_sendstr_chunk(req, "</td><td>");
             httpd_resp_sendstr_chunk(req, info.key);
-            httpd_resp_sendstr_chunk(req, "</td><td><input type='text' value='");
+            httpd_resp_sendstr_chunk(req, "</td><td><input type='text' name='");
+            httpd_resp_sendstr_chunk(req, info.key);
+            httpd_resp_sendstr_chunk(req, "' data-namespace='");
+            httpd_resp_sendstr_chunk(req, info.namespace_name);
+            httpd_resp_sendstr_chunk(req, "' value='");
             httpd_resp_sendstr_chunk(req, value_buf);
             httpd_resp_sendstr_chunk(req, "' /></td><td>");
             httpd_resp_sendstr_chunk(req, nvs_type_to_str(info.type));
@@ -511,16 +515,13 @@ static esp_err_t nvs_namespace_get_handler(httpd_req_t *req, const char *namespa
         httpd_resp_sendstr_chunk(req, "</body>");
 
         httpd_resp_sendstr_chunk(req, "</html>");
-
-        /* Redirect onto root to see the updated file list */
-        httpd_resp_set_status(req, "303 See Other");
-        httpd_resp_set_hdr(req, "Location", req->uri);
     }
     else{
         httpd_resp_sendstr_chunk(req, "]}");
-        /* Send empty chunk to signal HTTP response completion */
-        httpd_resp_sendstr_chunk(req, NULL);
     }
+
+    /* Send empty chunk to signal HTTP response completion */
+    httpd_resp_sendstr_chunk(req, NULL);
 
     err = ESP_OK;
 
@@ -539,13 +540,16 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
 
     res = get_namespace_key_from_uri(namespace, NULL, req);
     if(res & PARSE_ERROR) {
+        ESP_LOGE(TAG, "Failed to parse namespace");
         goto exit;
     }
     if(res & PARSE_KEY) {
         // Shouldn't supply this value
+        ESP_LOGE(TAG, "Don't supply key in URI");
         goto exit;
     }
     if(!(res & PARSE_NAMESPACE)) {
+        ESP_LOGE(TAG, "Missing required namespace");
         goto exit;
     }
 
@@ -590,6 +594,7 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
                 goto exit;
             }
             err = nvs_set_str(h, key, item->valuestring);
+            ESP_LOGI(TAG, "Saved string \"%s\" to %s/%s", item->valuestring, namespace, key);
         }
         else if(info.type == NVS_TYPE_BLOB) {
             // TODO
@@ -604,6 +609,7 @@ esp_err_t nvs_post_handler(httpd_req_t *req)
                 goto exit;
             }
             err = nvs_type_set_number(h, info.type, key, item->valuedouble);
+            ESP_LOGI(TAG, "Saved number %lf to %s/%s", item->valuedouble, namespace, key);
         }
 
         if(ESP_OK != err) goto exit;
@@ -616,6 +622,7 @@ exit:
     if( h ) nvs_close(h);
     nvs_release_iterator(it);
     httpd_resp_send_chunk(req, NULL, 0);
+    if(ESP_OK != err) ESP_LOGE(TAG, "nvs post failed");
     return err;
 }
 
