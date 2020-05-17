@@ -7,7 +7,7 @@ To render this template into a working project directory, you need to use the
 command-line utility `cookiecutter`. This can be installed via `pip3 install cookiecutter`.
 
 ```
-cookiecutter -c v0.0.0 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
+cookiecutter -c v0.1.0 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
 ```
 
 ## Routes
@@ -155,7 +155,7 @@ $ curl ${ESP32_IP}/api/v1/system/info
         "cores":        2,
         "silicon-revision":     1,
         "project-name": "my_esp32_webapp",
-        "project-version":      "0.0.0",
+        "project-version":      "0.1.0",
         "compile-date": "May 14 2020",
         "compile-time": "09:23:07",
         "secure-version":       0,
