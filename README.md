@@ -1,10 +1,7 @@
-This is a cookiecutter template for anyone who wants to create an ESP32 application
+This is a [cookiecutter](https://github.com/cookiecutter/cookiecutter) template 
+for anyone who wants to create an ESP32 application
 who's primary purpose is to be a web server and to be interacted with via a REST
 API.
-
-Small additional functions/features are added to demo common functionality
-so you can spend less time reading documentation and more time getting
-your project working!
 
 This project is not meant to serve many users concurrently, its primarily
 meant to just be a simple, approachable way to add REST functionality
@@ -20,9 +17,9 @@ cookiecutter -c v0.0.0 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
 
 ## Routes
 
-Add new routes to `src/route/v1/*`. As you make backwards incompatible updates
-to certain endpoints, you can create a new folder `v2` while maintaining older
-routes.
+Add new source files containing route handlers to `src/route/v1/*`. 
+As you make backwards incompatible updates to certain endpoints, 
+you can create a new folder `v2` while maintaining older routes.
 
 Adding routes involves 2 parts:
 
@@ -32,21 +29,164 @@ Adding routes involves 2 parts:
 
 Thats it!
 
-# Features
+# Additional Features
 
-## WebServer
-Many times you just want a web server to serve a REST API to control hardware.
-This sets up code and gives you nearby simple examples to base your API of of.
+![](assets/root.png)
 
-## Git Repo
-A small nicety is that this automaticall intializes your git repo upon
-creation.
+General features linked in the root route `/` for easy access.
+
+For admin endpoints, if the request has `text/html` in the `ACCEPT` field of the
+http header, then the server will respond with the webgui. Otherwise, JSON or
+binary data will be returned.
+
+## Admin Filesystem Interface
+
+![](assets/filesystem.gif)
+
+This project comes with a port of [LittleFS](https://github.com/joltwallet/esp_littlefs),
+a small fail-safe filesystem with higher performance than SPIFFS. Also bundled
+is a web-accessible file explorer to browse, upload, and delete files at 
+`/api/v1/filesystem`.
+
+File contents can be gathered by issuing `GET` to `/api/v1/filesystem/path/to/file`.
+
+Folder contents can also be queried via a `GET` command. For example:
+
+```
+$ curl ${ESP32_IP}/api/v1/filesystem
+{
+    "contents":[
+        {
+            "name":"foo",
+            "type":"dir",
+            "size":0
+        },
+        {
+            "name":"test.txt",
+            "type":"file",
+            "size":45
+        }
+    ]
+}
+```
+
+## Admin Non-Volatile Storage Interface
+
+![](assets/nvs.gif)
+
+NVS offers a convenient way to store key/value pairs to flash. The admin 
+interface at `/api/v1/nvs` allows for viewing and modifying existing NVS
+entries. Clicking away from an editted value will save the value to flash.
+
+Values can be manually queried via `GET`:
+
+```
+$ curl ${ESP32_IP}/api/v1/nvs/user/key1
+{
+        "namespace":    "user",
+        "key": 			"key1",
+        "dtype":        "uint8",
+        "value":        9,
+        "size": 		1
+}
+```
+
+Entire namespaces (or even the entire system) can also be queried. Binary data
+will be converted into a hexidecimal representation.
+
+```
+$ curl ${ESP32_IP}/api/v1/nvs/user
+{
+	"contents":[
+		{
+            "namespace":"user",
+            "key":"key2",
+            "value":"test string",
+            "dtype":"string",
+            "size":12
+        },
+        {
+            "namespace":"user",
+            "key":"key1",
+            "value":"9",
+            "dtype":"uint8",
+            "size":1
+        },
+        {
+            "namespace":"user",
+            "key":"key3",
+            "value":"deadbeef",
+            "dtype":"binary",
+            "size":4
+        }
+    ]
+}
+```
+
+Values can be manually updated via `POST`:
+
+```
+curl -X POST ${ESP32_IP}/api/v1/nvs/some_namespace --data '{"key1": 7}'
+```
+
+Multiple key/value pairs for a single namespace can be provided at once.
+
 
 ## OTA
-This sets up the boiler plate to allow OTA over WiFi via 2 different methods:
 
-1. Querying a URL for TODO upon startup 
-2. Uploading over the endpoint `/api/v1/ota`
+New firmware can be flashed over wifi by sending a `POST` command to the 
+`/api/v1/ota` endpoint like:
+
+```
+curl -X POST http://myesp32app.local/api/v1/ota --data-binary @- < my_esp32_webapp.bin
+```
+
+OTA has significant implications on how the ESP32 flash is partitioned.
+See/Modify `partitions.csv` to suit your project's needs. Warning: if the 
+uploaded firmware has a bug that prevents access to this endpoint, subsequent
+firmware updates must be preferred via UART.
+
+## System
+
+Get system information by sending a `GET` command to `/api/v1/system/info`:
+
+```
+$ curl ${ESP32_IP}/api/v1/system/info
+{
+        "idf-version":  "v4.2-dev-1416-g34a92385d",
+        "model":        "ESP32",
+        "cores":        2,
+        "silicon-revision":     1,
+        "project-name": "my_esp32_webapp",
+        "project-version":      "0.0.0",
+        "compile-date": "May 14 2020",
+        "compile-time": "09:23:07",
+        "secure-version":       0,
+        "app-elf-sha256":       "f6ef9c7e0e0c260994351f994b3a87114ad91b6a8c85cfa30dd9fc3045a2cc77"
+}
+```
+
+Reboot the system by sending a `POST` command to `/api/v1/system/reboot`
+
+```
+curl -X POST ${ESP32_IP}/api/v1/system/reboot
+```
+
+## Git Repo
+
+A small nicety is that this cookiecutter template will automatically intializes 
+git in your newly created project.
+
+## Demo
+
+A small demo endpoint  at `/api/v1/led/timer` is provided to show a REST API 
+controlling a physical object. Flash an led (the LED pin must be properly 
+configured via `idf.py menuconfig` under `<my project name> Configuration` at 
+the root level) for 1000 milliseconds by the following command.
+
+```
+curl -X POST ${ESP32_IP}/api/v1/led/timer --data '{"duration": 1000}'
+```
 
 # Misc tips
 
