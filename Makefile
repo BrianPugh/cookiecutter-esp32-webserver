@@ -73,3 +73,6 @@ nvs-get: env-test
 
 nvs-get-bin: env-test
 	curl ${ESP32_IP}/api/v1/nvs/user/key3
+
+size-components: build
+	cd my_esp32_webapp && idf.py size-components
