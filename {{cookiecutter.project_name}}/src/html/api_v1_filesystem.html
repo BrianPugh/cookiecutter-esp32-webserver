@@ -57,24 +57,13 @@ function upload() {
         document.getElementById("upload").disabled = true;
 
         var file = fileInput[0];
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (xhttp.readyState == 4) {
-                if (xhttp.status == 200) {
-                    document.open();
-                    document.write(xhttp.responseText);
-                    document.close();
-                } else if (xhttp.status == 0) {
-                    alert("Server closed the connection abruptly!");
-                    location.reload()
-                } else {
-                    alert(xhttp.status + " Error!\n" + xhttp.responseText);
-                    location.reload()
-                }
-            }
-        };
-        xhttp.open("POST", upload_path, true);
-        xhttp.send(file);
+
+        fetch(upload_path, {
+            method: 'POST',
+            body: file,
+        }).then(function(response) {
+            location.reload()
+        })
     }
 }
 </script>
