@@ -49,7 +49,7 @@ static esp_err_t root_get_handler(httpd_req_t *req) {
 			"<p>"
             "To update the firmware from a <code>bin</code> file, invoke the following command:"
             "<pre>"
-            "curl -X POST http://" CONFIG_PROJECT_MDNS_HOST_NAME "/api/v1/ota --data-binary @- < {{cookiecutter.project_name}}.bin"
+            "curl -X POST http://" CONFIG_PROJECT_MDNS_HOST_NAME ".local/api/v1/ota --data-binary @- < {{cookiecutter.project_name}}.bin"
             "</pre>"
             "Replace the binary name with your binary name if it differs."
 			"</p>"
