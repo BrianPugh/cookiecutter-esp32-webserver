@@ -6,6 +6,7 @@
     * Change flash speed to 80MHZ
     * Change flash mode to QIO (fastest)
     * Enable NEWLIB_NANO_FORMAT to save 50KB in the binary. 
+* reduced default favicon size from 6429 bytes -> 1621 bytes
 
 ## v0.1.0 2020-05-16
 * Initial Release
