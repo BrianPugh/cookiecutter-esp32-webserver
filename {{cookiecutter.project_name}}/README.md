@@ -24,3 +24,7 @@ Most notable, the options:
 
 Warning: these values will be contained in the built binary; be careful
 of distributing firmware with baked-in secrets.
+
+
+
+<sub><sup>This project was templated from [cookiecutter-esp32-webserver](https://github.com/BrianPugh/cookiecutter-esp32-webserver)</sup></sub>
