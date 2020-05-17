@@ -41,10 +41,10 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_FAIL_BIT      BIT1
 
 
-static void initialise_mdns(void)
+static void initialise_mdns(const char *hostname)
 {
     mdns_init();
-    mdns_hostname_set(CONFIG_PROJECT_MDNS_HOST_NAME);
+    mdns_hostname_set(hostname);
     mdns_instance_name_set(MDNS_INSTANCE);
 
     mdns_txt_item_t serviceTxtData[] = {
@@ -179,9 +179,13 @@ void app_main(void)
     led_setup();
 
     /* Setup DNS */
-    initialise_mdns();
-    netbiosns_init();
-    netbiosns_set_name(CONFIG_PROJECT_MDNS_HOST_NAME);
+    {
+        char *hostname = get_hostname();
+        initialise_mdns(hostname);
+        netbiosns_init();
+        netbiosns_set_name(hostname);
+        free(hostname);
+    }
 
     /* Start Server */
     ESP_ERROR_CHECK(server_init(CONFIG_PROJECT_FS_MOUNT_POINT));

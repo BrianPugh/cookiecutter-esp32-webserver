@@ -39,5 +39,12 @@ esp_err_t server_init(const char *base_path);
  */
 esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*handler)(httpd_req_t *r));
 
+/*****
+ * @brief Gets the hostname from NVS. Sets NVS to default config value if not
+ * found.
+ *
+ * @return Hostname. Must be freed by caller. NULL on error.
+ */
+char *get_hostname();
 
 #endif
