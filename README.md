@@ -1,11 +1,6 @@
 This is a [cookiecutter](https://github.com/cookiecutter/cookiecutter) template 
-for anyone who wants to create an ESP32 application
-who's primary purpose is to be a web server and to be interacted with via a REST
-API.
-
-This project is not meant to serve many users concurrently, its primarily
-meant to just be a simple, approachable way to add REST functionality
-to simple DIY projects.
+for anyone who wants to create an ESP32 application with webserver capabilities
+(including serving a simple REST API).
 
 # Usage
 To render this template into a working project directory, you need to use the
@@ -18,6 +13,8 @@ cookiecutter -c v0.0.0 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
 ## Routes
 
 Add new source files containing route handlers to `src/route/v1/*`. 
+Make sure to also add these files to `src/CMakeLists.txt` otherwise they
+will not be compiled.
 As you make backwards incompatible updates to certain endpoints, 
 you can create a new folder `v2` while maintaining older routes.
 
@@ -33,7 +30,7 @@ Thats it!
 
 ![](assets/root.png)
 
-General features linked in the root route `/` for easy access.
+Features descrbied in this section are linked in the root route `/` for easy access.
 
 For admin endpoints, if the request has `text/html` in the `ACCEPT` field of the
 http header, then the server will respond with the webgui. Otherwise, JSON or
@@ -43,7 +40,7 @@ binary data will be returned.
 
 ![](assets/filesystem.gif)
 
-This project comes with a port of [LittleFS](https://github.com/joltwallet/esp_littlefs),
+This project comes with a [port of LittleFS](https://github.com/joltwallet/esp_littlefs),
 a small fail-safe filesystem with higher performance than SPIFFS. Also bundled
 is a web-accessible file explorer to browse, upload, and delete files at 
 `/api/v1/filesystem`.
@@ -187,6 +184,12 @@ the root level) for 1000 milliseconds by the following command.
 ```
 curl -X POST ${ESP32_IP}/api/v1/led/timer --data '{"duration": 1000}'
 ```
+
+# Design Decisions
+
+Many of the Admin features could have been included in the form of another
+esp-idf component. However, to keep it easier to tailor to varying needs,
+the files are directly included in the project to allow easier modifications.
 
 # Misc tips
 
