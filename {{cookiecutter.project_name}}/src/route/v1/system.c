@@ -49,3 +49,10 @@ esp_err_t system_info_get_handler(httpd_req_t *req)
 }
 
 
+esp_err_t system_reboot_post_handler(httpd_req_t *req)
+{
+    httpd_resp_sendstr(req, "Rebooting system...");
+    vTaskDelay(100 / portTICK_PERIOD_MS);  // give it enough time to send the http message
+    esp_restart();
+    return ESP_OK;
+}

@@ -46,6 +46,12 @@ static esp_err_t root_get_handler(httpd_req_t *req) {
     httpd_resp_sendstr_chunk(req, "<p><a href=\"" PROJECT_ROUTE_V1_NVS "\">Non-Volatile Storage Explorer</a></p>");
     httpd_resp_sendstr_chunk(req, "<p><a href=\"/api/v1/system/info\">System Info</a></p>");
 
+    httpd_resp_sendstr_chunk(req, 
+            "<form action=\"/api/v1/system/reboot\" method=\"post\">"
+            "<input type=\"submit\" value=\"Reboot System\">"
+            "</form>"
+            );
+
     httpd_resp_sendstr_chunk(req, "<h1>Over The Air Updates (OTA)</h1>");
     httpd_resp_sendstr_chunk(req, 
 			"<p>"
@@ -68,10 +74,10 @@ static esp_err_t root_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-
 esp_err_t register_routes() {
-	/* Add all routes HERE */
     esp_err_t err = ESP_OK;
+
+   /* Add all routes HERE */
 
     ERR_CHECK(server_register("/", HTTP_GET, root_get_handler));
     ERR_CHECK(server_register("/favicon.ico", HTTP_GET, favicon_get_handler));
@@ -88,6 +94,7 @@ esp_err_t register_routes() {
     ERR_CHECK(server_register("/api/v1/led/timer",   HTTP_POST, led_timer_post_handler));
     ERR_CHECK(server_register("/api/v1/ota",         HTTP_POST, ota_post_handler));
     ERR_CHECK(server_register("/api/v1/system/info", HTTP_GET, system_info_get_handler));
+    ERR_CHECK(server_register("/api/v1/system/reboot", HTTP_POST, system_reboot_post_handler));
 
 exit:
     return err;

@@ -9,4 +9,9 @@
 esp_err_t system_info_get_handler(httpd_req_t *req);
 
 
+/**
+ * @brief Reboot the system
+ */
+esp_err_t system_reboot_post_handler(httpd_req_t *req);
+
 #endif

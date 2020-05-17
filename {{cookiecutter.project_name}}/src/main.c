@@ -184,6 +184,7 @@ void app_main(void)
         initialise_mdns(hostname);
         netbiosns_init();
         netbiosns_set_name(hostname);
+        ESP_LOGI(TAG, "Access device at http://%s.local", hostname);
         free(hostname);
     }
 
