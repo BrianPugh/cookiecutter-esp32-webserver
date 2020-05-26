@@ -1,10 +1,11 @@
 
 idf_component_register(
         SRCS
+            "filesystem.c"
+            "helpers.c"
+            "led.c"
             "main.c"
             "server.c"
-            "filesystem.c"
-            "led.c"
             "route.c"
             "route/v1/example.c"
             "route/v1/filesystem.c"

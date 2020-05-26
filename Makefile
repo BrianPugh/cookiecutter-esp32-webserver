@@ -18,6 +18,9 @@ ifndef ESP32_IP
 	$(error ESP32_IP is undefined)
 endif
 
+erase_flash: render
+	cd my_esp32_webapp && idf.py erase_flash
+
 build: render
 	# Builds the default binary
 	cd my_esp32_webapp && idf.py build

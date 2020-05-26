@@ -1,6 +1,4 @@
-#include "nvs.h"
-#include "nvs_flash.h"
-
+#include "helpers.h"
 #include "server.h"
 #include "route.h"
 
@@ -76,30 +74,5 @@ esp_err_t server_register(const char *route, httpd_method_t method, esp_err_t (*
 
 char *get_hostname()
 {
-    char *hostname = NULL;
-    esp_err_t err;
-    nvs_handle_t h = 0;
-    size_t len;
-
-    err = nvs_open("wifi", NVS_READWRITE, &h);
-    if(ESP_OK != err) goto exit;
-
-    err = nvs_get_str(h, "hostname", NULL, &len);
-    if(ESP_ERR_NVS_NOT_FOUND == err) {
-        /* Store the default value to nvs */
-        ESP_ERROR_CHECK(nvs_set_str(h, "hostname", CONFIG_PROJECT_MDNS_HOST_NAME));
-        err = nvs_get_str(h, "hostname", NULL, &len);
-    }
-    if(ESP_OK != err) goto exit;
-
-    if(NULL == (hostname = malloc(len))) goto exit;
-
-    err = nvs_get_str(h, "hostname", hostname, &len);
-    if(ESP_OK != err) goto exit;
-
-    err = ESP_OK;
-
-exit:
-    if(h) nvs_close(h);
-    return hostname;
+    return nvs_get_str_default("wifi", "hostname", CONFIG_PROJECT_MDNS_HOST_NAME);
 }
