@@ -13,6 +13,7 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_ota_ops.h"
+#include "esp_sntp.h"
 #include "esp_vfs_semihost.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
@@ -27,6 +28,7 @@
 
 
 #include "filesystem.h"
+#include "helpers.h"
 #include "led.h"
 #include "server.h"
 
@@ -41,7 +43,7 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_FAIL_BIT      BIT1
 
 
-static void initialise_mdns(const char *hostname)
+static void initialize_mdns(const char *hostname)
 {
     mdns_init();
     mdns_hostname_set(hostname);
@@ -54,6 +56,33 @@ static void initialise_mdns(const char *hostname)
 
     ESP_ERROR_CHECK(mdns_service_add("ESP32-WebServer", "_http", "_tcp", 80, serviceTxtData,
                                      sizeof(serviceTxtData) / sizeof(serviceTxtData[0])));
+}
+
+static void initialize_sntp(void)
+{
+    char *ntp_server = NULL;
+    ESP_LOGI(TAG, "Initializing SNTP");
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    ntp_server = nvs_get_str_default("ntp", "server", "pool.ntp.org");
+    sntp_setservername(0, ntp_server);
+
+    /* You can set a callback that triggers on synchronization of form:
+     *      void time_sync_notification_cb(struct timeval *tv)
+     */
+    //sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+    /* Other options: SNTP_SYNC_MODE_SMOOTH*/
+    sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
+    sntp_init();
+    free(ntp_server);
+
+    {
+        uint8_t retry = 0;
+        const uint8_t retry_count = 10;
+        while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
+            ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
+        }
+    }
 }
 
 static void event_handler(void* arg, esp_event_base_t event_base,
@@ -172,16 +201,16 @@ void app_main(void)
     /* Initialize Wifi */
     wifi_init_sta();
 
-    /* Set default Project NVS values */
-    // TODO
-    
+    /* Synchronize system clock */
+    initialize_sntp();    
+
     /* Setup GPIO */
     led_setup();
 
     /* Setup DNS */
     {
         char *hostname = get_hostname();
-        initialise_mdns(hostname);
+        initialize_mdns(hostname);
         netbiosns_init();
         netbiosns_set_name(hostname);
         ESP_LOGI(TAG, "Access device at http://%s.local", hostname);

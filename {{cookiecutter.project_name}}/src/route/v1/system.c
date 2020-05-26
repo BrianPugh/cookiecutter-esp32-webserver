@@ -56,3 +56,14 @@ esp_err_t system_reboot_post_handler(httpd_req_t *req)
     esp_restart();
     return ESP_OK;
 }
+
+
+esp_err_t system_time_get_handler(httpd_req_t *req)
+{
+    char buf[128] = { 0 };
+    time_t now;
+    time(&now);
+    snprintf(buf, sizeof(buf), "{\"time\":%ld}", now);
+    httpd_resp_sendstr(req, buf);
+    return ESP_OK;
+}

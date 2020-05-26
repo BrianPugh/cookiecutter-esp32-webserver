@@ -94,6 +94,7 @@ esp_err_t register_routes() {
     ERR_CHECK(server_register("/api/v1/led/timer",   HTTP_POST, led_timer_post_handler));
     ERR_CHECK(server_register("/api/v1/ota",         HTTP_POST, ota_post_handler));
     ERR_CHECK(server_register("/api/v1/system/info", HTTP_GET, system_info_get_handler));
+    ERR_CHECK(server_register("/api/v1/system/time", HTTP_GET, system_time_get_handler));
     ERR_CHECK(server_register("/api/v1/system/reboot", HTTP_POST, system_reboot_post_handler));
 
 exit:

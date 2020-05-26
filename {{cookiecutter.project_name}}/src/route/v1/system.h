@@ -14,4 +14,10 @@ esp_err_t system_info_get_handler(httpd_req_t *req);
  */
 esp_err_t system_reboot_post_handler(httpd_req_t *req);
 
+
+/**
+ * @brief Get the UNIX system time.
+ */
+esp_err_t system_time_get_handler(httpd_req_t *req);
+
 #endif
