@@ -60,11 +60,15 @@ static void initialize_mdns(const char *hostname)
 
 static void initialize_sntp(void)
 {
-    char *ntp_server = NULL;
+    static char *ntp_server = NULL;
     ESP_LOGI(TAG, "Initializing SNTP");
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    if(ntp_server) free(ntp_server);
     ntp_server = nvs_get_str_default("ntp", "server", "pool.ntp.org");
+    ESP_LOGI(TAG, "Setting NTP server as %s", ntp_server);
     sntp_setservername(0, ntp_server);
+    /* We don't free ntp_server here because i believe sntp internally doesn't
+     * make a copy */
 
     /* You can set a callback that triggers on synchronization of form:
      *      void time_sync_notification_cb(struct timeval *tv)
@@ -73,7 +77,6 @@ static void initialize_sntp(void)
     /* Other options: SNTP_SYNC_MODE_SMOOTH*/
     sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
     sntp_init();
-    free(ntp_server);
 
     {
         uint8_t retry = 0;
