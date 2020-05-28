@@ -169,6 +169,12 @@ Reboot the system by sending a `POST` command to `/api/v1/system/reboot`
 curl -X POST ${ESP32_IP}/api/v1/system/reboot
 ```
 
+## SNTP System Time
+At startup, the device will attempt to contact an NTP server (defaults to 
+`pool.ntp.org`, settable at NVS storage location `ntp/server`) to set system
+time.
+
+
 ## Git Repo
 
 A small nicety is that this cookiecutter template will automatically intializes 
