@@ -1,3 +1,6 @@
+## v0.3.0 2020-05-28
+* Add SNTP system clock time sync and a basic endpoint `/api/v1/system/time`
+
 ## v0.2.1 2020-05-17
 * Update `esp_littlefs` to the latest veresion
 
