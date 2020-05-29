@@ -1,11 +1,11 @@
 #!/bin/bash -e
 
-if [ ! -d .git ]; then
-    git init
-    git add .
-    git commit -a -m "Initial Cookiecutter Commit from github.com:BrianPugh/cookiecutter-esp32-webserver.git ( 0.3.0 )."
+# Skip post-hook if invoked my cookiecutter makefile
+[ -d "build" ] && exit 0
 
-    # Ignore error for rapid cookiecutter development
-    git remote add origin {{cookiecutter.git_repo}}
-fi
+git init
+git add .
+( rmdir components/esp_littlefs && git submodule add https://github.com/joltwallet/esp_littlefs.git components/esp_littlefs && git submodule update --init --recursive ) || true
+git commit -a -m "Initial Cookiecutter Commit from github.com:BrianPugh/cookiecutter-esp32-webserver.git ( 0.3.0 )."
 
+git remote add origin {{cookiecutter.git_repo}}
