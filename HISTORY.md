@@ -1,3 +1,6 @@
+## v0.3.1 2020-05-28
+* Fix `esp_littlfs` submodule within slug via post-gen-hook workaround
+
 ## v0.3.0 2020-05-28
 * Add SNTP system clock time sync and a basic endpoint `/api/v1/system/time`
 
