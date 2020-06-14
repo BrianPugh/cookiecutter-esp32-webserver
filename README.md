@@ -24,7 +24,8 @@ Adding routes involves 2 parts:
 2. Registering the handler with a route and command type in the `register_routes`
    function of `src/route.c`.
 
-Thats it!
+Thats it! If you add a new source file, don't forget to add it to `CMakeLists.txt`.
+
 
 # Additional Features
 
