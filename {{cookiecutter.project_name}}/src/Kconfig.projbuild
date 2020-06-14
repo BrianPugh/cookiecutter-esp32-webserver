@@ -14,7 +14,7 @@ menu "{{cookiecutter.project_name}} Configuration"
 
     config PROJECT_MDNS_HOST_NAME
         string "mDNS Host Name"
-        default "esp-webserver"
+        default "{{cookiecutter.project_var_name|replace('_', '-')}}"
         help
             Specify the domain name used in the mDNS service.
             Note that webpage also take it as a part of URL where it will send GET/POST requests to.
