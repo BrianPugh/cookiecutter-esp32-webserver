@@ -1,3 +1,7 @@
+## v0.3.2 2020-06-14
+* Use project name as default hostname
+* Improve LED code for example.
+
 ## v0.3.1 2020-05-28
 * Fix `esp_littlfs` submodule within slug via post-gen-hook workaround
 
