@@ -5,6 +5,8 @@
 #include "sdkconfig.h"
 #include "stdbool.h"
 
+#define LED_INDICATOR_ON 1
+#define LED_INDICATOR_OFF 0
 
 /****
  * Setup hardware for LED.

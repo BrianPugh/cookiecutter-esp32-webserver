@@ -26,7 +26,7 @@ esp_err_t led_timer_post_handler(httpd_req_t *req)
     }
 
     int time_ms = duration->valueint;
-    led_set(true);
+    led_set(LED_INDICATOR_ON);
     /* NOTE: Blocking in a handler prevents additional clients from being served.
              If this you only intend to serve 1 request at a time, this is
              fine. However, if you'd like to serve additional request while this
@@ -35,7 +35,7 @@ esp_err_t led_timer_post_handler(httpd_req_t *req)
              2. Use a timer
      */
     vTaskDelay( time_ms / portTICK_PERIOD_MS);
-    led_set(false);
+    led_set(LED_INDICATOR_OFF);
 
     httpd_resp_sendstr(req, "Post control value successfully");
 
