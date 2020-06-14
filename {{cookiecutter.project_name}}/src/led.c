@@ -14,6 +14,7 @@ esp_err_t led_setup()
     // TODO: Error handling
     gpio_pad_select_gpio(CONFIG_PROJECT_INDICATOR_LED_GPIO);
     gpio_set_direction(CONFIG_PROJECT_INDICATOR_LED_GPIO, GPIO_MODE_INPUT_OUTPUT);
+    led_set(LED_INDICATOR_OFF);
     return ESP_OK;
 }
 
