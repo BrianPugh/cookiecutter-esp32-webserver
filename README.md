@@ -1,6 +1,6 @@
 This is a [cookiecutter](https://github.com/cookiecutter/cookiecutter) template 
 for anyone who wants to create an ESP32 application with webserver capabilities
-(including serving a simple REST API).
+(including serving a simple REST API). It is compatible with ESP-IDF version 4.2 and above.
 
 # Usage
 To render this template into a working project directory, you need to use the
@@ -207,3 +207,6 @@ meant to help out simple oversights/issues.
 If everything compiles, but you are having undefined references at the end
 during linking, its probably because your forgot to add the c-file to 
 `src/CMakeLists.txt`.
+
+## Failed to resolve component 'esp_system'
+This template relies on functionality introduced in version 4.2 of the ESP-IDF. Older versions (e.g. v4.0.1 or v3) are not compatible.
