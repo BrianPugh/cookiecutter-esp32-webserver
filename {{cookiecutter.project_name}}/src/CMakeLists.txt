@@ -20,7 +20,7 @@ idf_component_register(
             "esp_http_server"
             "esp_https_ota"
             "esp_littlefs"
-            "esp_system"
+            #"esp_system"
             "esp_wifi"
             "fatfs"
             "json"

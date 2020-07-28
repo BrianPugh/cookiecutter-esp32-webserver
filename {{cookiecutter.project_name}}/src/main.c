@@ -6,12 +6,13 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include "esp_idf_version.h"
+
 #include "driver/gpio.h"
 #include "esp_event.h"
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 #include "esp_log.h"
-#include "esp_netif.h"
 #include "esp_ota_ops.h"
 #include "esp_sntp.h"
 #include "esp_vfs_semihost.h"
@@ -26,6 +27,15 @@
 #include "sdkconfig.h"
 #include "string.h"
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+#define ESP_IDF_NETIF_AVAILABLE true
+#else
+#define ESP_IDF_NETIF_AVAILABLE false
+#endif
+
+#if ESP_IDF_NETIF_AVAILABLE
+#include "esp_netif.h"
+#endif
 
 #include "filesystem.h"
 #include "helpers.h"
@@ -120,14 +130,25 @@ static void wifi_init_sta(void)
 {
     s_wifi_event_group = xEventGroupCreate();
 
+#if ESP_IDF_NETIF_AVAILABLE
     ESP_ERROR_CHECK(esp_netif_init());
+#else
+    tcpip_adapter_init();
+#endif
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_sta();
 
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+#if ESP_IDF_NETIF_AVAILABLE
+    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
+    assert(sta_netif);
+#endif
 
+    {
+        wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+        ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    }
+
+#if ESP_IDF_NETIF_AVAILABLE
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
@@ -140,15 +161,22 @@ static void wifi_init_sta(void)
                                                         &event_handler,
                                                         NULL,
                                                         &instance_got_ip));
+#else
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL));
+#endif
 
     wifi_config_t wifi_config = {
         .sta = {
             .ssid = CONFIG_PROJECT_WIFI_SSID,
             .password = CONFIG_PROJECT_WIFI_PASS,
+#if ESP_IDF_NETIF_AVAILABLE
+            /* for some reason this isn't defined in v4.1-beta2 */
             .pmf_cfg = {
                 .capable = true,
                 .required = false
             },
+#endif
         },
     };
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
@@ -175,10 +203,12 @@ static void wifi_init_sta(void)
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
 
+#if ESP_IDF_NETIF_AVAILABLE
     /* The event will not be processed after unregister */
     ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));
     ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
     vEventGroupDelete(s_wifi_event_group);
+#endif
 }
 
 

@@ -1,3 +1,5 @@
+#include "esp_idf_version.h"
+
 #include "route/v1/system.h"
 #include "esp_ota_ops.h"
 #include "sodium.h"
@@ -18,7 +20,11 @@ esp_err_t system_info_get_handler(httpd_req_t *req)
         #define CHIP_CASE(x) case CHIP_ ## x:model_str = #x; break;
         switch(chip_info.model) {
             CHIP_CASE(ESP32)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+            /* TODO: this version check should be reduced to v4.1.0 once
+             * that's finally released. */
             CHIP_CASE(ESP32S2)
+#endif
             default:
                 model_str = "UNKNOWN";
         }

@@ -79,3 +79,6 @@ nvs-get-bin: env-test
 
 size-components: build
 	cd my_esp32_webapp && idf.py size-components
+
+clean:
+	rm -rf my_esp32_webapp/ build/ sdkconfig
