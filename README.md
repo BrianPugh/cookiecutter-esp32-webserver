@@ -10,6 +10,12 @@ command-line utility `cookiecutter`. This can be installed via `pip3 install coo
 cookiecutter -c v0.3.2 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
 ```
 
+Note: this template was developed with esp-idf v4.2 in mind. If you need to
+use v4.1, run:
+```
+cookiecutter -c 4.1-compat git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
+```
+
 ## Routes
 
 Add new source files containing route handlers to `src/route/v1/*`. 
