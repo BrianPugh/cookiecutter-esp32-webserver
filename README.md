@@ -7,13 +7,13 @@ To render this template into a working project directory, you need to use the
 command-line utility `cookiecutter`. This can be installed via `pip3 install cookiecutter`.
 
 ```
-cookiecutter -c v0.3.2 git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
+cookiecutter -c v0.3.2 https://github.com/BrianPugh/cookiecutter-esp32-webserver.git
 ```
 
 Note: this template was developed with esp-idf v4.2 in mind. If you need to
 use v4.1, run:
 ```
-cookiecutter -c 4.1-compat git@github.com:BrianPugh/cookiecutter-esp32-webserver.git
+cookiecutter -c 4.1-compat https://github.com/BrianPugh/cookiecutter-esp32-webserver.git
 ```
 
 ## Routes
